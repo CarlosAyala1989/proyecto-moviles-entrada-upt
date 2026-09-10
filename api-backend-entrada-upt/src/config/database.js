@@ -1,26 +1,25 @@
 import mariadb from 'mariadb';
-import { env } from './env.js';
+import { entorno } from './env.js';
 
-export const pool = mariadb.createPool({
-  host: env.db.host,
-  port: env.db.port,
-  database: env.db.database,
-  user: env.db.user,
-  password: env.db.password,
-  connectionLimit: env.db.connectionLimit,
+export const grupoConexiones = mariadb.createPool({
+  host: entorno.db.host,
+  port: entorno.db.port,
+  database: entorno.db.database,
+  user: entorno.db.user,
+  password: entorno.db.password,
+  connectionLimit: entorno.db.connectionLimit,
   acquireTimeout: 10_000,
   insertIdAsNumber: true,
   bigIntAsNumber: true,
 });
 
-export async function checkDatabaseConnection() {
-  let connection;
+export async function verificarConexionBaseDatos() {
+  let conexion;
 
   try {
-    connection = await pool.getConnection();
-    await connection.query('SELECT 1 AS connected');
+    conexion = await grupoConexiones.getConnection();
+    await conexion.query('SELECT 1 AS conectado');
   } finally {
-    connection?.release();
+    conexion?.release();
   }
 }
-

@@ -30,31 +30,30 @@ if (missingVariables.length > 0) {
   );
 }
 
-function positiveInteger(value, name, fallback) {
-  const parsedValue = Number(value ?? fallback);
+function enteroPositivo(valor, nombre, valorPredeterminado) {
+  const valorConvertido = Number(valor ?? valorPredeterminado);
 
-  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
-    throw new Error(`${name} debe ser un número entero positivo`);
+  if (!Number.isInteger(valorConvertido) || valorConvertido <= 0) {
+    throw new Error(`${nombre} debe ser un número entero positivo`);
   }
 
-  return parsedValue;
+  return valorConvertido;
 }
 
-export const env = Object.freeze({
+export const entorno = Object.freeze({
   nodeEnv: process.env.NODE_ENV ?? 'development',
-  port: positiveInteger(process.env.PORT, 'PORT', 3000),
+  port: enteroPositivo(process.env.PORT, 'PORT', 3000),
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
   db: {
     host: process.env.DB_HOST,
-    port: positiveInteger(process.env.DB_PORT, 'DB_PORT'),
+    port: enteroPositivo(process.env.DB_PORT, 'DB_PORT'),
     database: process.env.DB_DATABASE,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    connectionLimit: positiveInteger(
+    connectionLimit: enteroPositivo(
       process.env.DB_CONNECTION_LIMIT,
       'DB_CONNECTION_LIMIT',
       10,
     ),
   },
 });
-
