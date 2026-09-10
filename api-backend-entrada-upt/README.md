@@ -1,33 +1,67 @@
-# API Backend Entrada UPT
+# API de Identidad Digital y Control de Acceso UPT
 
-API REST en Node.js/Express para las aplicaciones Flutter de estudiantes y
-verificadores. Utiliza un pool de conexiones a MariaDB.
+Backend Node.js/Express para las aplicaciones móviles de estudiante y personal
+de seguridad. El backend es la autoridad para la conexión con MariaDB y para
+las decisiones de acceso; las aplicaciones Flutter no se conectan a la base de
+datos directamente.
 
 ## Requisitos
 
-- Node.js 20 o superior
-- MariaDB accesible desde el equipo o contenedor donde se ejecuta la API
+- Node.js 20 o superior.
+- MariaDB disponible en Docker.
+- Archivo local `credenciales_bd_local.txt`, excluido de Git, con las variables
+  `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER` y `DB_PASSWORD`.
+
+La configuración puede sobrescribirse con un archivo `.env`. No se deben
+guardar contraseñas, tokens ni el archivo de credenciales en el repositorio.
 
 ## Ejecución local
 
-El proyecto carga primero `.env` (si existe) y después
-`credenciales_bd_local.txt`. Las variables ya definidas en `.env` tienen
-prioridad.
-
 ```bash
 npm install
+npm run migrar
 npm run dev
 ```
 
-La API queda disponible en `http://localhost:3000/api`.
+## Endpoints del Hito 1
 
-Endpoints iniciales:
+| Método | Ruta | Resultado esperado |
+| --- | --- | --- |
+| `GET` | `/api` | Información básica de la API. |
+| `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
 
-- `GET /api`: información de la API.
-- `GET /api/health`: estado de la API y de la conexión con MariaDB.
+`/api/health` se conserva temporalmente como alias de `/api/salud` para no
+interrumpir clientes locales ya configurados.
 
-Para cambiar opciones como el puerto, copia `.env.example` como `.env`. No
-subas archivos con credenciales al repositorio.
+### Prueba HTTP reproducible
+
+Con el servidor iniciado, ejecuta:
+
+```bash
+curl --include http://127.0.0.1:3000/api/salud
+```
+
+La respuesta esperada es `200 OK` con un cuerpo como:
+
+```json
+{
+  "estado": "correcto",
+  "base_datos": "conectada"
+}
+```
+
+## Migraciones
+
+Las migraciones SQL se encuentran en `migraciones/` y se aplican en orden
+numérico mediante:
+
+```bash
+npm run migrar
+```
+
+La migración inicial crea únicamente `migraciones_aplicadas`, que registra las
+migraciones ejecutadas. Las tablas de usuarios, roles, QR y accesos pertenecen
+al Hito 2 y todavía no se crean.
 
 ## Pruebas
 
@@ -35,14 +69,16 @@ subas archivos con credenciales al repositorio.
 npm test
 ```
 
+Las pruebas cubren la API básica, la conexión de salud, JSON inválido, tipo de
+contenido y rutas inexistentes. No se ejecutan aplicaciones Flutter durante
+esta etapa.
+
 ## Docker
 
-Antes de construir la imagen deben existir las dependencias bloqueadas:
+La imagen no contiene credenciales. Al ejecutarla, inyecta las variables
+`DB_*`; si MariaDB comparte una red Docker con la API, usa el nombre del
+servicio como `DB_HOST` y su puerto interno `3306`.
 
 ```bash
 docker build -t api-entrada-upt .
 ```
-
-Al ejecutar la imagen, inyecta las variables `DB_*`. Si MariaDB está en el
-mismo Compose, `DB_HOST` debe ser el nombre de su servicio y `DB_PORT` suele
-ser `3306` (el puerto interno del contenedor).
