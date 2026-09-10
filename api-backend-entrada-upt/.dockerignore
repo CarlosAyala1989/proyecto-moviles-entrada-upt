@@ -1,0 +1,8 @@
+node_modules
+npm-debug.log*
+.env
+.env.*
+credenciales_bd_local.txt
+test
+coverage
+

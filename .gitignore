@@ -1,0 +1,22 @@
+# Secretos y configuración local
+**/.env
+**/.env.*
+!**/.env.example
+**/credenciales*.txt
+
+# Dependencias y artefactos de Node.js
+**/node_modules/
+**/coverage/
+npm-debug.log*
+
+# Artefactos de Flutter y Dart
+**/.dart_tool/
+**/.flutter-plugins-dependencies
+**/.pub/
+**/build/
+
+# Archivos de IDE y sistema
+*.iml
+.idea/
+.vscode/
+.DS_Store
