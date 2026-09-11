@@ -158,4 +158,24 @@ describe('Modelo de datos', () => {
       'ubicacion_escaneo_obtenida_en',
     ]);
   });
+
+  it('incluye índices para las consultas operativas por fecha y motivo', async () => {
+    const indices = await grupoConexiones.query(
+      `SELECT DISTINCT INDEX_NAME AS nombre
+       FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND INDEX_NAME IN (
+           'idx_registros_fecha',
+           'idx_registros_motivo_fecha',
+           'idx_auditoria_fecha'
+         )
+       ORDER BY INDEX_NAME`,
+    );
+
+    assert.deepEqual(indices.map(({ nombre }) => nombre), [
+      'idx_auditoria_fecha',
+      'idx_registros_fecha',
+      'idx_registros_motivo_fecha',
+    ]);
+  });
 });
