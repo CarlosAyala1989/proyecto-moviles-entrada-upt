@@ -328,6 +328,9 @@ export class RepositorioUsuariosMariaDb {
       ) || (
         Object.hasOwn(datos, 'estado_autorizacion')
         && datos.estado_autorizacion !== 'AUTORIZADO'
+      ) || (
+        Object.hasOwn(datos, 'identidad_verificada')
+        && !datos.identidad_verificada
       );
       if (debeRevocarSesiones) {
         await conexion.query(
@@ -336,6 +339,14 @@ export class RepositorioUsuariosMariaDb {
                revocada_en = CURRENT_TIMESTAMP(3),
                motivo_revocacion = 'USUARIO_DESHABILITADO'
            WHERE usuario_id = ? AND estado = 'ACTIVA'`,
+          [id],
+        );
+        await conexion.query(
+          `UPDATE credenciales_acceso
+           SET estado = 'REVOCADA',
+               revocada_en = CURRENT_TIMESTAMP(3),
+               motivo_revocacion = 'USUARIO_DESHABILITADO'
+           WHERE usuario_id = ? AND estado = 'PENDIENTE'`,
           [id],
         );
       }
@@ -361,6 +372,7 @@ export class RepositorioUsuariosMariaDb {
     const conexion = await grupoConexiones.getConnection();
     try {
       await conexion.beginTransaction();
+      await conexion.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [id]);
       const usuario = await obtenerUsuarioConConexion(conexion, id);
       if (!usuario) {
         throw new ErrorHttp({
@@ -379,6 +391,15 @@ export class RepositorioUsuariosMariaDb {
           [id, rol.id, usuarioActorId],
         );
       }
+
+      await conexion.query(
+        `UPDATE credenciales_acceso
+         SET estado = 'REVOCADA',
+             revocada_en = CURRENT_TIMESTAMP(3),
+             motivo_revocacion = 'ROLES_USUARIO_ACTUALIZADOS'
+         WHERE usuario_id = ? AND estado = 'PENDIENTE'`,
+        [id],
+      );
 
       await registrarAuditoria(
         conexion,
@@ -428,6 +449,14 @@ export class RepositorioUsuariosMariaDb {
              revocada_en = CURRENT_TIMESTAMP(3),
              motivo_revocacion = 'CREDENCIAL_LOCAL_CAMBIADA'
          WHERE usuario_id = ? AND estado = 'ACTIVA'`,
+        [id],
+      );
+      await conexion.query(
+        `UPDATE credenciales_acceso
+         SET estado = 'REVOCADA',
+             revocada_en = CURRENT_TIMESTAMP(3),
+             motivo_revocacion = 'CREDENCIAL_LOCAL_CAMBIADA'
+         WHERE usuario_id = ? AND estado = 'PENDIENTE'`,
         [id],
       );
       await registrarAuditoria(

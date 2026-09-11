@@ -9,6 +9,7 @@ import { validarTipoContenidoJson } from './middleware/validar_solicitud.js';
 import { RepositorioAutenticacionMariaDb } from './modulos/autenticacion/repositorios/repositorio_autenticacion_mariadb.js';
 import { crearEnrutadorAutenticacion } from './modulos/autenticacion/rutas/autenticacion.rutas.js';
 import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/autenticacion.servicio.js';
+import { crearEnrutadorCodigosQr } from './modulos/codigos_qr/rutas/codigos_qr.rutas.js';
 import { crearEnrutadorIdentidadDigital } from './modulos/identidad_digital/rutas/identidad_digital.rutas.js';
 import { crearEnrutadorAdministracionUsuarios } from './modulos/usuarios/rutas/administracion_usuarios.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
@@ -17,6 +18,7 @@ export function crearAplicacion({
   configuracionAutenticacion = entorno.autenticacion,
   entornoEjecucion = entorno.nodeEnv,
   repositorioAutenticacion,
+  repositorioCodigosQr,
   repositorioIdentidadDigital,
   repositorioUsuarios,
   registrarSolicitudes = entornoEjecucion !== 'test',
@@ -65,6 +67,13 @@ export function crearAplicacion({
     crearEnrutadorIdentidadDigital({
       requerirAutenticacion,
       repositorio: repositorioIdentidadDigital,
+    }),
+  );
+  aplicacion.use(
+    '/api/codigos-qr',
+    crearEnrutadorCodigosQr({
+      requerirAutenticacion,
+      repositorio: repositorioCodigosQr,
     }),
   );
   aplicacion.use(

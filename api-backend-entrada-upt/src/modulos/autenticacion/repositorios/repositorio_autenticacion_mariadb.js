@@ -402,21 +402,41 @@ export class RepositorioAutenticacionMariaDb {
   }
 
   async revocarSesion(sesionId, usuarioId) {
-    const resultado = await grupoConexiones.query(
-      `UPDATE sesiones
-       SET estado = 'REVOCADA',
-           revocada_en = CURRENT_TIMESTAMP(3),
-           motivo_revocacion = 'CIERRE_SESION_USUARIO'
-       WHERE id = ? AND usuario_id = ? AND estado = 'ACTIVA'`,
-      [sesionId, usuarioId],
-    );
-    if (resultado.affectedRows > 0) {
-      await grupoConexiones.query(
+    const conexion = await grupoConexiones.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const resultado = await conexion.query(
+        `UPDATE sesiones
+         SET estado = 'REVOCADA',
+             revocada_en = CURRENT_TIMESTAMP(3),
+             motivo_revocacion = 'CIERRE_SESION_USUARIO'
+         WHERE id = ? AND usuario_id = ? AND estado = 'ACTIVA'`,
+        [sesionId, usuarioId],
+      );
+      if (resultado.affectedRows === 0) {
+        await conexion.commit();
+        return;
+      }
+      await conexion.query(
+        `UPDATE credenciales_acceso
+         SET estado = 'REVOCADA',
+             revocada_en = CURRENT_TIMESTAMP(3),
+             motivo_revocacion = 'SESION_CERRADA'
+         WHERE sesion_id = ? AND estado = 'PENDIENTE'`,
+        [sesionId],
+      );
+      await conexion.query(
         `INSERT INTO registros_auditoria
           (usuario_actor_id, accion, entidad, entidad_id)
          VALUES (?, 'SESION_CERRADA', 'SESION', ?)`,
         [usuarioId, String(sesionId)],
       );
+      await conexion.commit();
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
     }
   }
 }
