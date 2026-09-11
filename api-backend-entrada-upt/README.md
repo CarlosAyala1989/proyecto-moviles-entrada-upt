@@ -30,6 +30,7 @@ npm run dev
 | `GET` | `/api` | Información básica de la API. |
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
 | Varios | `/api/autenticacion/*` | Inicio, renovación, consulta y cierre de sesión. |
+| `GET` | `/api/identidad-digital` | Identidad propia obtenida desde la sesión. |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
@@ -80,6 +81,9 @@ inicial están documentados en `docs/administracion_usuarios.md`. El contrato de
 sesiones, sus medidas de seguridad y las peticiones HTTP reproducibles están en
 `docs/autenticacion_temporal.md`.
 
+La respuesta del perfil propio y sus reglas de privacidad están documentadas
+en `docs/identidad_digital.md`.
+
 ## Pruebas
 
 ```bash
@@ -89,7 +93,9 @@ npm test
 Las pruebas cubren la API básica, conexión de salud, modelo de datos,
 autenticación válida e inválida, usuarios inactivos, expiración lógica,
 rotación y revocación de tokens, bloqueo temporal, autorización por roles y el
-flujo administrativo. No se ejecutan aplicaciones Flutter durante esta etapa.
+flujo administrativo. También comprueban la identidad propia, la privacidad de
+campos internos y el rechazo de consultas sobre otra persona. No se ejecutan
+aplicaciones Flutter durante esta etapa.
 
 ## Docker
 
