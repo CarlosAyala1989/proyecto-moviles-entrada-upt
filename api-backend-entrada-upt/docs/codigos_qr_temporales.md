@@ -89,8 +89,9 @@ decidir si el ingreso está autorizado.
 
 - El código contiene una referencia, un OTP y un nonce criptográficamente
   aleatorios; no contiene nombre, código universitario, correo ni ubicación.
-- MariaDB conserva SHA-256 del código completo, OTP y nonce, nunca la cadena
-  que recibe Flutter.
+- MariaDB conserva SHA-256 de la referencia, OTP y nonce, nunca la cadena
+  completa que recibe Flutter. La validación mantiene compatibilidad con las
+  credenciales locales emitidas por la versión anterior del Hito 6.
 - Generar un código nuevo revoca cualquier código pendiente anterior del mismo
   usuario.
 - La generación simultánea se serializa y deja exactamente una credencial
@@ -98,8 +99,9 @@ decidir si el ingreso está autorizado.
 - Cerrar sesión, deshabilitar la identidad, cambiar la contraseña o modificar
   los roles revoca las credenciales pendientes relacionadas.
 - El usuario puede revocar explícitamente su código mediante `DELETE`.
-- La aceptación de un código y el consumo de un solo uso se implementarán en
-  el Hito 7; el cliente nunca podrá establecer esos resultados.
+- La aceptación de un código y el consumo transaccional de un solo uso se
+  implementan en `/api/ingresos/validar`; el cliente nunca puede establecer
+  esos resultados.
 
 ## Ubicación y sus límites
 
