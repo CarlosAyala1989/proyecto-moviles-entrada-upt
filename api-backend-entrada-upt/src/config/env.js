@@ -52,8 +52,28 @@ export const entorno = Object.freeze({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: enteroPositivo(process.env.PORT, 'PORT', 3000),
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
-  claveAdministracionDesarrollo:
-    process.env.CLAVE_ADMINISTRACION_DESARROLLO ?? '',
+  autenticacion: {
+    duracionTokenAccesoMinutos: enteroPositivo(
+      process.env.DURACION_TOKEN_ACCESO_MINUTOS,
+      'DURACION_TOKEN_ACCESO_MINUTOS',
+      15,
+    ),
+    duracionTokenRenovacionDias: enteroPositivo(
+      process.env.DURACION_TOKEN_RENOVACION_DIAS,
+      'DURACION_TOKEN_RENOVACION_DIAS',
+      7,
+    ),
+    maxIntentosInicioSesion: enteroPositivo(
+      process.env.MAX_INTENTOS_INICIO_SESION,
+      'MAX_INTENTOS_INICIO_SESION',
+      5,
+    ),
+    duracionBloqueoMinutos: enteroPositivo(
+      process.env.DURACION_BLOQUEO_MINUTOS,
+      'DURACION_BLOQUEO_MINUTOS',
+      15,
+    ),
+  },
   db: {
     host: process.env.DB_HOST,
     port: enteroPositivo(process.env.DB_PORT, 'DB_PORT'),

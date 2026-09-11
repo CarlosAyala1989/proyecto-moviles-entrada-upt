@@ -4,17 +4,31 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { entorno } from './config/env.js';
 import { manejarErrores, rutaNoEncontrada } from './middleware/manejo_errores.js';
+import { crearRequerirAutenticacion } from './middleware/requerir_autenticacion.js';
 import { validarTipoContenidoJson } from './middleware/validar_solicitud.js';
+import { RepositorioAutenticacionMariaDb } from './modulos/autenticacion/repositorios/repositorio_autenticacion_mariadb.js';
+import { crearEnrutadorAutenticacion } from './modulos/autenticacion/rutas/autenticacion.rutas.js';
+import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/autenticacion.servicio.js';
 import { crearEnrutadorAdministracionUsuarios } from './modulos/usuarios/rutas/administracion_usuarios.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
 export function crearAplicacion({
-  claveAdministracion = entorno.claveAdministracionDesarrollo,
+  configuracionAutenticacion = entorno.autenticacion,
   entornoEjecucion = entorno.nodeEnv,
+  repositorioAutenticacion,
   repositorioUsuarios,
   registrarSolicitudes = entornoEjecucion !== 'test',
 } = {}) {
   const aplicacion = express();
+  const repositorioSesiones = repositorioAutenticacion
+    ?? new RepositorioAutenticacionMariaDb();
+  const servicioAutenticacion = crearServicioAutenticacion(
+    repositorioSesiones,
+    configuracionAutenticacion,
+  );
+  const requerirAutenticacion = crearRequerirAutenticacion(
+    servicioAutenticacion,
+  );
 
   aplicacion.disable('x-powered-by');
   aplicacion.use(helmet());
@@ -38,10 +52,16 @@ export function crearAplicacion({
   // Se conserva temporalmente mientras los clientes migran a la ruta en español.
   aplicacion.use('/api/health', enrutadorSalud);
   aplicacion.use(
+    '/api/autenticacion',
+    crearEnrutadorAutenticacion({
+      servicio: servicioAutenticacion,
+      requerirAutenticacion,
+    }),
+  );
+  aplicacion.use(
     '/api/administracion',
     crearEnrutadorAdministracionUsuarios({
-      claveAdministracion,
-      entornoEjecucion,
+      requerirAutenticacion,
       repositorio: repositorioUsuarios,
     }),
   );

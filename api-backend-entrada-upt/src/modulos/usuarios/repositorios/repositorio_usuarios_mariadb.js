@@ -97,17 +97,23 @@ async function obtenerIdsRoles(conexion, nombres) {
   return filas;
 }
 
-async function registrarAuditoria(conexion, accion, usuarioId, detalle = {}) {
+async function registrarAuditoria(
+  conexion,
+  accion,
+  usuarioId,
+  usuarioActorId,
+  detalle = {},
+) {
   await conexion.query(
     `INSERT INTO registros_auditoria
       (usuario_actor_id, accion, entidad, entidad_id, detalle)
-     VALUES (NULL, ?, 'USUARIO', ?, ?)`,
-    [accion, String(usuarioId), JSON.stringify(detalle)],
+     VALUES (?, ?, 'USUARIO', ?, ?)`,
+    [usuarioActorId, accion, String(usuarioId), JSON.stringify(detalle)],
   );
 }
 
 export class RepositorioUsuariosMariaDb {
-  async crear(datos) {
+  async crear(datos, usuarioActorId) {
     const conexion = await grupoConexiones.getConnection();
     try {
       await conexion.beginTransaction();
@@ -115,6 +121,7 @@ export class RepositorioUsuariosMariaDb {
         `INSERT INTO usuarios (
           codigo_institucional,
           correo_institucional,
+          contrasena_hash,
           nombres,
           apellidos,
           nombre_institucional,
@@ -124,10 +131,11 @@ export class RepositorioUsuariosMariaDb {
           estado_autorizacion,
           identidad_verificada,
           identidad_verificada_en
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           datos.codigo_institucional,
           datos.correo_institucional,
+          datos.contrasena_hash ?? null,
           datos.nombres,
           datos.apellidos,
           datos.nombre_institucional ?? null,
@@ -143,14 +151,19 @@ export class RepositorioUsuariosMariaDb {
       const roles = await obtenerIdsRoles(conexion, datos.roles);
       for (const rol of roles) {
         await conexion.query(
-          'INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (?, ?)',
-          [resultado.insertId, rol.id],
+          `INSERT INTO usuarios_roles (usuario_id, rol_id, asignado_por)
+           VALUES (?, ?, ?)`,
+          [resultado.insertId, rol.id, usuarioActorId],
         );
       }
 
-      await registrarAuditoria(conexion, 'USUARIO_CREADO', resultado.insertId, {
-        roles: datos.roles,
-      });
+      await registrarAuditoria(
+        conexion,
+        'USUARIO_CREADO',
+        resultado.insertId,
+        usuarioActorId,
+        { roles: datos.roles, credencial_local: Boolean(datos.contrasena_hash) },
+      );
       await conexion.commit();
       return await obtenerUsuarioConConexion(conexion, resultado.insertId);
     } catch (error) {
@@ -226,7 +239,7 @@ export class RepositorioUsuariosMariaDb {
     }
   }
 
-  async actualizar(id, datos) {
+  async actualizar(id, datos, usuarioActorId) {
     const conexion = await grupoConexiones.getConnection();
     try {
       await conexion.beginTransaction();
@@ -261,9 +274,13 @@ export class RepositorioUsuariosMariaDb {
         });
       }
 
-      await registrarAuditoria(conexion, 'USUARIO_ACTUALIZADO', id, {
-        campos: Object.keys(datos),
-      });
+      await registrarAuditoria(
+        conexion,
+        'USUARIO_ACTUALIZADO',
+        id,
+        usuarioActorId,
+        { campos: Object.keys(datos) },
+      );
       await conexion.commit();
       return await obtenerUsuarioConConexion(conexion, id);
     } catch (error) {
@@ -274,7 +291,7 @@ export class RepositorioUsuariosMariaDb {
     }
   }
 
-  async actualizarEstado(id, datos) {
+  async actualizarEstado(id, datos, usuarioActorId) {
     const conexion = await grupoConexiones.getConnection();
     try {
       await conexion.beginTransaction();
@@ -306,7 +323,30 @@ export class RepositorioUsuariosMariaDb {
         });
       }
 
-      await registrarAuditoria(conexion, 'ESTADO_USUARIO_ACTUALIZADO', id, datos);
+      const debeRevocarSesiones = (
+        Object.hasOwn(datos, 'estado') && datos.estado !== 'ACTIVO'
+      ) || (
+        Object.hasOwn(datos, 'estado_autorizacion')
+        && datos.estado_autorizacion !== 'AUTORIZADO'
+      );
+      if (debeRevocarSesiones) {
+        await conexion.query(
+          `UPDATE sesiones
+           SET estado = 'REVOCADA',
+               revocada_en = CURRENT_TIMESTAMP(3),
+               motivo_revocacion = 'USUARIO_DESHABILITADO'
+           WHERE usuario_id = ? AND estado = 'ACTIVA'`,
+          [id],
+        );
+      }
+
+      await registrarAuditoria(
+        conexion,
+        'ESTADO_USUARIO_ACTUALIZADO',
+        id,
+        usuarioActorId,
+        datos,
+      );
       await conexion.commit();
       return await obtenerUsuarioConConexion(conexion, id);
     } catch (error) {
@@ -317,7 +357,7 @@ export class RepositorioUsuariosMariaDb {
     }
   }
 
-  async asignarRoles(id, nombresRoles) {
+  async asignarRoles(id, nombresRoles, usuarioActorId) {
     const conexion = await grupoConexiones.getConnection();
     try {
       await conexion.beginTransaction();
@@ -334,14 +374,19 @@ export class RepositorioUsuariosMariaDb {
       await conexion.query('DELETE FROM usuarios_roles WHERE usuario_id = ?', [id]);
       for (const rol of roles) {
         await conexion.query(
-          'INSERT INTO usuarios_roles (usuario_id, rol_id) VALUES (?, ?)',
-          [id, rol.id],
+          `INSERT INTO usuarios_roles (usuario_id, rol_id, asignado_por)
+           VALUES (?, ?, ?)`,
+          [id, rol.id, usuarioActorId],
         );
       }
 
-      await registrarAuditoria(conexion, 'ROLES_USUARIO_ACTUALIZADOS', id, {
-        roles: nombresRoles,
-      });
+      await registrarAuditoria(
+        conexion,
+        'ROLES_USUARIO_ACTUALIZADOS',
+        id,
+        usuarioActorId,
+        { roles: nombresRoles },
+      );
       await conexion.commit();
       return await obtenerUsuarioConConexion(conexion, id);
     } catch (error) {
@@ -356,5 +401,47 @@ export class RepositorioUsuariosMariaDb {
     return grupoConexiones.query(
       'SELECT id, nombre, descripcion FROM roles WHERE activo = TRUE ORDER BY nombre',
     );
+  }
+
+  async cambiarContrasena(id, contrasenaHash, usuarioActorId) {
+    const conexion = await grupoConexiones.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const resultado = await conexion.query(
+        `UPDATE usuarios
+         SET contrasena_hash = ?,
+             intentos_fallidos_inicio_sesion = 0,
+             bloqueado_hasta = NULL
+         WHERE id = ?`,
+        [contrasenaHash, id],
+      );
+      if (resultado.affectedRows === 0) {
+        throw new ErrorHttp({
+          codigo: 'USUARIO_NO_ENCONTRADO',
+          mensaje: 'El usuario solicitado no existe.',
+          estadoHttp: 404,
+        });
+      }
+      await conexion.query(
+        `UPDATE sesiones
+         SET estado = 'REVOCADA',
+             revocada_en = CURRENT_TIMESTAMP(3),
+             motivo_revocacion = 'CREDENCIAL_LOCAL_CAMBIADA'
+         WHERE usuario_id = ? AND estado = 'ACTIVA'`,
+        [id],
+      );
+      await registrarAuditoria(
+        conexion,
+        'CREDENCIAL_LOCAL_CAMBIADA',
+        id,
+        usuarioActorId,
+      );
+      await conexion.commit();
+    } catch (error) {
+      await conexion.rollback();
+      throw traducirErrorBaseDatos(error);
+    } finally {
+      conexion.release();
+    }
   }
 }

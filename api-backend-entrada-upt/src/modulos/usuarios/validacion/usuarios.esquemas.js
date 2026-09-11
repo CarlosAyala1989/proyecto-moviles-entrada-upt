@@ -19,6 +19,13 @@ const correoInstitucional = z.string()
 
 const textoCorto = z.string().trim().min(1).max(150);
 const textoOpcional = z.string().trim().max(255).nullable().optional();
+const contrasenaRobusta = z.string()
+  .min(14)
+  .max(128)
+  .regex(/[a-z]/)
+  .regex(/[A-Z]/)
+  .regex(/[0-9]/)
+  .regex(/[^A-Za-z0-9]/);
 
 const camposUsuario = {
   codigo_institucional: codigoInstitucional,
@@ -35,6 +42,7 @@ export const esquemaCrearUsuario = z.object({
   estado: z.enum(estadosUsuario).default('PENDIENTE'),
   estado_autorizacion: z.enum(estadosAutorizacion).default('PENDIENTE'),
   identidad_verificada: z.boolean().default(false),
+  contrasena: contrasenaRobusta.optional(),
   roles: z.array(z.enum(nombresRoles)).min(1).max(nombresRoles.length)
     .refine((roles) => new Set(roles).size === roles.length),
 }).strict();
@@ -55,6 +63,10 @@ export const esquemaAsignarRoles = z.object({
     .refine((roles) => new Set(roles).size === roles.length),
 }).strict();
 
+export const esquemaCambiarContrasena = z.object({
+  contrasena: contrasenaRobusta,
+}).strict();
+
 export const esquemaIdUsuario = z.object({
   id: z.coerce.number().int().positive(),
 }).strict();
@@ -71,11 +83,5 @@ export const esquemaAdministradorInicial = z.object({
   correo_institucional: correoInstitucional,
   nombres: textoCorto.max(100),
   apellidos: textoCorto,
-  contrasena: z.string()
-    .min(14)
-    .max(128)
-    .regex(/[a-z]/)
-    .regex(/[A-Z]/)
-    .regex(/[0-9]/)
-    .regex(/[^A-Za-z0-9]/),
+  contrasena: contrasenaRobusta,
 }).strict();

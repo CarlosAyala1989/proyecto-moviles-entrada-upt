@@ -16,7 +16,6 @@ const rutaCredenciales = path.resolve(
 
 function generarCredenciales() {
   return {
-    CLAVE_ADMINISTRACION_DESARROLLO: randomBytes(32).toString('base64url'),
     ADMIN_INICIAL_CODIGO: 'ADMIN-DESARROLLO',
     ADMIN_INICIAL_CORREO: 'administrador.desarrollo@example.invalid',
     ADMIN_INICIAL_NOMBRES: 'Administrador',
