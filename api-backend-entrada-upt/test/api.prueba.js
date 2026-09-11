@@ -12,7 +12,7 @@ describe('API de control de acceso', () => {
   it('expone la información básica de la API', async () => {
     const respuesta = await request(app).get('/api').expect(200);
 
-    assert.equal(respuesta.body.name, 'API Entrada UPT');
+    assert.equal(respuesta.body.nombre, 'API Entrada UPT');
     assert.equal(respuesta.body.version, '1.0.0');
   });
 
