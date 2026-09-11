@@ -31,6 +31,7 @@ npm run dev
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
 | Varios | `/api/autenticacion/*` | Inicio, renovación, consulta y cierre de sesión. |
 | `GET` | `/api/identidad-digital` | Identidad propia obtenida desde la sesión. |
+| Varios | `/api/codigos-qr/*` | Generación, estado y revocación del QR temporal. |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
@@ -84,6 +85,9 @@ sesiones, sus medidas de seguridad y las peticiones HTTP reproducibles están en
 La respuesta del perfil propio y sus reglas de privacidad están documentadas
 en `docs/identidad_digital.md`.
 
+El contrato de generación del QR, la rotación y los límites de la ubicación
+están documentados en `docs/codigos_qr_temporales.md`.
+
 ## Pruebas
 
 ```bash
@@ -94,8 +98,9 @@ Las pruebas cubren la API básica, conexión de salud, modelo de datos,
 autenticación válida e inválida, usuarios inactivos, expiración lógica,
 rotación y revocación de tokens, bloqueo temporal, autorización por roles y el
 flujo administrativo. También comprueban la identidad propia, la privacidad de
-campos internos y el rechazo de consultas sobre otra persona. No se ejecutan
-aplicaciones Flutter durante esta etapa.
+campos internos, el rechazo de consultas sobre otra persona y la generación,
+caducidad, rotación y revocación de credenciales QR. No se ejecutan aplicaciones
+Flutter durante esta etapa.
 
 ## Docker
 

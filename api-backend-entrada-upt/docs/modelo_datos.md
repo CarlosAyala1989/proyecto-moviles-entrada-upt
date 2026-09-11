@@ -36,7 +36,8 @@ erDiagram
 - `sesiones`: almacena hashes de tokens, vigencia y revocación.
 - `puntos_acceso`: define puntos y radios configurables para geocerca.
 - `credenciales_acceso`: conserva hashes del token, OTP y nonce; no almacena
-  datos personales dentro de la representación QR.
+  datos personales dentro de la representación QR. También conserva la lectura
+  de ubicación declarada, su precisión, momento y distancia calculada.
 - `registros_acceso`: registra decisiones autorizadas y denegadas, incluyendo
   intentos con tokens desconocidos mediante una huella no reversible.
 - `registros_auditoria`: registra operaciones administrativas y sensibles.
@@ -61,10 +62,11 @@ pertenezcan a usuarios habilitados. La asignación de roles exige
 
 ## Parámetros provisionales
 
-La migración de catálogos incorpora valores de desarrollo para duración del
-QR, sesión, intentos de acceso y radio de ubicación. No son reglas oficiales
-de la UPT. Las coordenadas enviadas por un cliente tampoco prueban por sí solas
-la presencia física de una persona.
+Las migraciones incorporan valores de desarrollo para duración del QR, sesión,
+intentos de acceso, antigüedad y precisión de ubicación. Los radios se configuran
+por cada punto de acceso. No son reglas oficiales de la UPT. Las coordenadas
+enviadas por un cliente tampoco prueban por sí solas la presencia física de una
+persona.
 
 ## Datos de prueba
 
