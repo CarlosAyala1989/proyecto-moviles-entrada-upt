@@ -41,5 +41,9 @@ export function crearServicioIngresos(repositorio) {
 
       return normalizarResultado(resultado);
     },
+
+    consultarRecientes: ({ usuarioSeguridadId, limite }) => (
+      repositorio.consultarRecientes({ usuarioSeguridadId, limite })
+    ),
   };
 }

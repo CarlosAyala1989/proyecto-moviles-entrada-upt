@@ -434,4 +434,46 @@ export class RepositorioIngresosMariaDb {
       conexion.release();
     }
   }
+
+  async consultarRecientes({ usuarioSeguridadId, limite }) {
+    const filas = await grupoConexiones.query(
+      `SELECT
+        registros_acceso.id,
+        registros_acceso.resultado,
+        registros_acceso.motivo,
+        registros_acceso.registrado_en,
+        puntos_acceso.codigo AS punto_codigo,
+        puntos_acceso.nombre AS punto_nombre,
+        usuarios.id AS usuario_id,
+        usuarios.codigo_institucional,
+        COALESCE(
+          NULLIF(usuarios.nombre_institucional, ''),
+          CONCAT_WS(' ', usuarios.nombres, usuarios.apellidos)
+        ) AS nombre_completo
+       FROM registros_acceso
+       JOIN puntos_acceso
+         ON puntos_acceso.id = registros_acceso.punto_acceso_id
+       LEFT JOIN usuarios ON usuarios.id = registros_acceso.usuario_id
+       WHERE registros_acceso.usuario_seguridad_id = ?
+       ORDER BY registros_acceso.id DESC
+       LIMIT ?`,
+      [usuarioSeguridadId, limite],
+    );
+    return filas.map((fila) => ({
+      id: fila.id,
+      resultado: fila.resultado,
+      motivo: fila.motivo,
+      registrado_en: fila.registrado_en,
+      punto_acceso: {
+        codigo: fila.punto_codigo,
+        nombre: fila.punto_nombre,
+      },
+      usuario: fila.resultado === 'AUTORIZADO' && fila.usuario_id
+        ? {
+          codigo_institucional: fila.codigo_institucional,
+          nombre_completo: fila.nombre_completo,
+        }
+        : null,
+    }));
+  }
 }

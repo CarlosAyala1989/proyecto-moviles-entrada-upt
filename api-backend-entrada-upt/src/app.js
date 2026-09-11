@@ -6,19 +6,20 @@ import { entorno } from './config/env.js';
 import { manejarErrores, rutaNoEncontrada } from './middleware/manejo_errores.js';
 import { crearRequerirAutenticacion } from './middleware/requerir_autenticacion.js';
 import { validarTipoContenidoJson } from './middleware/validar_solicitud.js';
+import { crearEnrutadorAdministracion } from './modulos/administracion/rutas/administracion.rutas.js';
 import { RepositorioAutenticacionMariaDb } from './modulos/autenticacion/repositorios/repositorio_autenticacion_mariadb.js';
 import { crearEnrutadorAutenticacion } from './modulos/autenticacion/rutas/autenticacion.rutas.js';
 import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/autenticacion.servicio.js';
 import { crearEnrutadorCodigosQr } from './modulos/codigos_qr/rutas/codigos_qr.rutas.js';
 import { crearEnrutadorIdentidadDigital } from './modulos/identidad_digital/rutas/identidad_digital.rutas.js';
 import { crearEnrutadorIngresos } from './modulos/ingresos/rutas/ingresos.rutas.js';
-import { crearEnrutadorAdministracionUsuarios } from './modulos/usuarios/rutas/administracion_usuarios.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
 export function crearAplicacion({
   configuracionAutenticacion = entorno.autenticacion,
   entornoEjecucion = entorno.nodeEnv,
   repositorioAutenticacion,
+  repositorioAdministracionOperativa,
   repositorioCodigosQr,
   repositorioIdentidadDigital,
   repositorioIngresos,
@@ -87,9 +88,10 @@ export function crearAplicacion({
   );
   aplicacion.use(
     '/api/administracion',
-    crearEnrutadorAdministracionUsuarios({
+    crearEnrutadorAdministracion({
       requerirAutenticacion,
-      repositorio: repositorioUsuarios,
+      repositorioAdministracionOperativa,
+      repositorioUsuarios,
     }),
   );
 

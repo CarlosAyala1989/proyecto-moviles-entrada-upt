@@ -15,3 +15,7 @@ export const esquemaValidarIngreso = z.object({
     obtenida_en: z.string().datetime({ offset: true }),
   }).strict(),
 }).strict();
+
+export const esquemaConsultarIngresosRecientes = z.object({
+  limite: z.coerce.number().int().positive().max(50).default(20),
+}).strict();

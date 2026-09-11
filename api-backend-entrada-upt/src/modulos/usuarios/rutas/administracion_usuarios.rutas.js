@@ -16,11 +16,14 @@ import {
 export function crearEnrutadorAdministracionUsuarios({
   requerirAutenticacion,
   repositorio = new RepositorioUsuariosMariaDb(),
+  protegerRutas = true,
 }) {
   const enrutador = Router();
   const controlador = crearControladorUsuarios(repositorio);
 
-  enrutador.use(requerirAutenticacion, requerirRoles('ADMINISTRADOR'));
+  if (protegerRutas) {
+    enrutador.use(requerirAutenticacion, requerirRoles('ADMINISTRADOR'));
+  }
 
   enrutador.get('/roles', controlador.consultarRoles);
   enrutador.get(

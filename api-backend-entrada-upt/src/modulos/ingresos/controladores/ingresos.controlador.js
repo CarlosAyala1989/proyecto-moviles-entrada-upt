@@ -7,5 +7,13 @@ export function crearControladorIngresos(servicio) {
       });
       respuesta.json({ datos: resultado });
     },
+
+    consultarRecientes: async (solicitud, respuesta) => {
+      const registros = await servicio.consultarRecientes({
+        usuarioSeguridadId: solicitud.usuarioAutenticado.id,
+        limite: solicitud.datosValidados.consulta.limite,
+      });
+      respuesta.json({ datos: registros });
+    },
   };
 }
