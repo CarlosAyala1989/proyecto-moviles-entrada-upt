@@ -9,6 +9,7 @@ import { validarTipoContenidoJson } from './middleware/validar_solicitud.js';
 import { RepositorioAutenticacionMariaDb } from './modulos/autenticacion/repositorios/repositorio_autenticacion_mariadb.js';
 import { crearEnrutadorAutenticacion } from './modulos/autenticacion/rutas/autenticacion.rutas.js';
 import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/autenticacion.servicio.js';
+import { crearEnrutadorIdentidadDigital } from './modulos/identidad_digital/rutas/identidad_digital.rutas.js';
 import { crearEnrutadorAdministracionUsuarios } from './modulos/usuarios/rutas/administracion_usuarios.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
@@ -16,6 +17,7 @@ export function crearAplicacion({
   configuracionAutenticacion = entorno.autenticacion,
   entornoEjecucion = entorno.nodeEnv,
   repositorioAutenticacion,
+  repositorioIdentidadDigital,
   repositorioUsuarios,
   registrarSolicitudes = entornoEjecucion !== 'test',
 } = {}) {
@@ -56,6 +58,13 @@ export function crearAplicacion({
     crearEnrutadorAutenticacion({
       servicio: servicioAutenticacion,
       requerirAutenticacion,
+    }),
+  );
+  aplicacion.use(
+    '/api/identidad-digital',
+    crearEnrutadorIdentidadDigital({
+      requerirAutenticacion,
+      repositorio: repositorioIdentidadDigital,
     }),
   );
   aplicacion.use(
