@@ -17,7 +17,7 @@ function numeroPositivo(configuracion, clave, { entero = false } = {}) {
   return valor;
 }
 
-function interpretarConfiguracion(configuracion) {
+export function interpretarConfiguracionCodigosQr(configuracion) {
   const valorUnSoloUso = configuracion.QR_UN_SOLO_USO;
   if (valorUnSoloUso !== 'true' && valorUnSoloUso !== 'false') {
     throw errorConfiguracion();
@@ -45,7 +45,7 @@ function interpretarConfiguracion(configuracion) {
   };
 }
 
-function validarMomentoYPrecision(ubicacion, configuracion) {
+export function validarMomentoYPrecision(ubicacion, configuracion) {
   const momentoUbicacion = new Date(ubicacion.obtenida_en).getTime();
   const antiguedadSegundos = (Date.now() - momentoUbicacion) / 1000;
 
@@ -85,7 +85,7 @@ function normalizarEstadoActual(credencial) {
 export function crearServicioCodigosQr(repositorio) {
   return {
     generar: async ({ usuarioId, sesionId, ubicacion }) => {
-      const configuracion = interpretarConfiguracion(
+      const configuracion = interpretarConfiguracionCodigosQr(
         await repositorio.consultarConfiguracion(),
       );
       validarMomentoYPrecision(ubicacion, configuracion);

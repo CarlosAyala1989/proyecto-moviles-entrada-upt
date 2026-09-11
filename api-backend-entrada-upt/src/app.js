@@ -11,6 +11,7 @@ import { crearEnrutadorAutenticacion } from './modulos/autenticacion/rutas/auten
 import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/autenticacion.servicio.js';
 import { crearEnrutadorCodigosQr } from './modulos/codigos_qr/rutas/codigos_qr.rutas.js';
 import { crearEnrutadorIdentidadDigital } from './modulos/identidad_digital/rutas/identidad_digital.rutas.js';
+import { crearEnrutadorIngresos } from './modulos/ingresos/rutas/ingresos.rutas.js';
 import { crearEnrutadorAdministracionUsuarios } from './modulos/usuarios/rutas/administracion_usuarios.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
@@ -20,6 +21,7 @@ export function crearAplicacion({
   repositorioAutenticacion,
   repositorioCodigosQr,
   repositorioIdentidadDigital,
+  repositorioIngresos,
   repositorioUsuarios,
   registrarSolicitudes = entornoEjecucion !== 'test',
 } = {}) {
@@ -74,6 +76,13 @@ export function crearAplicacion({
     crearEnrutadorCodigosQr({
       requerirAutenticacion,
       repositorio: repositorioCodigosQr,
+    }),
+  );
+  aplicacion.use(
+    '/api/ingresos',
+    crearEnrutadorIngresos({
+      requerirAutenticacion,
+      repositorio: repositorioIngresos,
     }),
   );
   aplicacion.use(
