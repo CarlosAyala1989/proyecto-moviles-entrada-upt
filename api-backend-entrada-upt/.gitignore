@@ -3,6 +3,6 @@ node_modules/
 .env.*
 !.env.example
 credenciales_bd_local.txt
+credenciales_administrador_local.txt
 npm-debug.log*
 coverage/
-

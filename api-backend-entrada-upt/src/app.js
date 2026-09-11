@@ -5,31 +5,51 @@ import morgan from 'morgan';
 import { entorno } from './config/env.js';
 import { manejarErrores, rutaNoEncontrada } from './middleware/manejo_errores.js';
 import { validarTipoContenidoJson } from './middleware/validar_solicitud.js';
+import { crearEnrutadorAdministracionUsuarios } from './modulos/usuarios/rutas/administracion_usuarios.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
-export const app = express();
+export function crearAplicacion({
+  claveAdministracion = entorno.claveAdministracionDesarrollo,
+  entornoEjecucion = entorno.nodeEnv,
+  repositorioUsuarios,
+  registrarSolicitudes = entornoEjecucion !== 'test',
+} = {}) {
+  const aplicacion = express();
 
-app.disable('x-powered-by');
-app.use(helmet());
-app.use(cors({ origin: entorno.corsOrigin }));
-app.use(validarTipoContenidoJson);
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: false }));
+  aplicacion.disable('x-powered-by');
+  aplicacion.use(helmet());
+  aplicacion.use(cors({ origin: entorno.corsOrigin }));
+  aplicacion.use(validarTipoContenidoJson);
+  aplicacion.use(express.json({ limit: '1mb' }));
+  aplicacion.use(express.urlencoded({ extended: false }));
 
-if (entorno.nodeEnv !== 'test') {
-  app.use(morgan(entorno.nodeEnv === 'production' ? 'combined' : 'dev'));
+  if (registrarSolicitudes) {
+    aplicacion.use(morgan(entornoEjecucion === 'production' ? 'combined' : 'dev'));
+  }
+
+  aplicacion.get('/api', (_solicitud, respuesta) => {
+    respuesta.json({
+      nombre: 'API Entrada UPT',
+      version: '1.0.0',
+    });
+  });
+
+  aplicacion.use('/api/salud', enrutadorSalud);
+  // Se conserva temporalmente mientras los clientes migran a la ruta en español.
+  aplicacion.use('/api/health', enrutadorSalud);
+  aplicacion.use(
+    '/api/administracion',
+    crearEnrutadorAdministracionUsuarios({
+      claveAdministracion,
+      entornoEjecucion,
+      repositorio: repositorioUsuarios,
+    }),
+  );
+
+  aplicacion.use(rutaNoEncontrada);
+  aplicacion.use(manejarErrores);
+
+  return aplicacion;
 }
 
-app.get('/api', (_request, response) => {
-  response.json({
-    name: 'API Entrada UPT',
-    version: '1.0.0',
-  });
-});
-
-app.use('/api/salud', enrutadorSalud);
-// Se conserva temporalmente mientras los clientes migran a la ruta en español.
-app.use('/api/health', enrutadorSalud);
-
-app.use(rutaNoEncontrada);
-app.use(manejarErrores);
+export const app = crearAplicacion();

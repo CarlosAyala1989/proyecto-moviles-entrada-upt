@@ -10,18 +10,22 @@
     "start": "node src/server.js",
     "test": "NODE_ENV=test node --test --test-concurrency=1",
     "migrar": "node scripts/ejecutar_migraciones.js",
-    "sembrar:pruebas": "node scripts/cargar_datos_prueba.js"
+    "sembrar:pruebas": "node scripts/cargar_datos_prueba.js",
+    "crear:administrador-inicial": "node scripts/crear_administrador_inicial.js",
+    "crear:administrador-desarrollo": "node scripts/generar_administrador_desarrollo.js"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "mariadb": "^3.4.5",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "zod": "^4.6.2"
   },
   "devDependencies": {
     "supertest": "^7.1.4"

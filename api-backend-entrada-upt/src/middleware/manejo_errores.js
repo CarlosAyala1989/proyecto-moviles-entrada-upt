@@ -23,7 +23,7 @@ export function manejarErrores(error, _solicitud, respuesta, _siguiente) {
     ? 'El cuerpo de la solicitud debe ser un JSON válido.'
     : (estadoHttp >= 500 ? 'Ocurrió un error interno en el servidor.' : error.message);
 
-  if (estadoHttp >= 500) {
+  if (estadoHttp >= 500 && !(error instanceof ErrorHttp)) {
     console.error(error);
   }
 
