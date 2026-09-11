@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "test": "NODE_ENV=test node --test",
-    "migrar": "node scripts/ejecutar_migraciones.js"
+    "test": "NODE_ENV=test node --test --test-concurrency=1",
+    "migrar": "node scripts/ejecutar_migraciones.js",
+    "sembrar:pruebas": "node scripts/cargar_datos_prueba.js"
   },
   "engines": {
     "node": ">=20"
