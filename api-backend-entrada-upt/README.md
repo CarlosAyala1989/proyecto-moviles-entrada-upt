@@ -29,6 +29,7 @@ npm run dev
 | --- | --- | --- |
 | `GET` | `/api` | Información básica de la API. |
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
+| Varios | `/api/administracion/*` | Administración local protegida de usuarios. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
 interrumpir clientes locales ya configurados.
@@ -71,6 +72,13 @@ npm run sembrar:pruebas
 
 La carga es idempotente y se bloquea si `NODE_ENV=production`.
 
+## Administración local
+
+Las operaciones de usuarios y el procedimiento para crear el administrador
+inicial están documentados en `docs/administracion_usuarios.md`. La protección
+con clave de desarrollo es transitoria y está deshabilitada en producción; será
+reemplazada por autenticación y autorización por roles en el Hito 4.
+
 ## Pruebas
 
 ```bash
@@ -78,8 +86,9 @@ npm test
 ```
 
 Las pruebas cubren la API básica, conexión de salud, validación HTTP, estructura
-de tablas, catálogos, relaciones, unicidad y rangos geográficos. No se ejecutan
-aplicaciones Flutter durante esta etapa.
+de tablas, catálogos, relaciones, unicidad, rangos geográficos y el flujo
+administrativo de usuarios. No se ejecutan aplicaciones Flutter durante esta
+etapa.
 
 ## Docker
 
