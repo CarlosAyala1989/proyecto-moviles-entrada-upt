@@ -40,6 +40,9 @@ encontrar el primer administrador y no funciona en producción.
 | `PUT` | `/api/administracion/usuarios/:id/roles` | Reemplazar los roles asignados. |
 | `PUT` | `/api/administracion/usuarios/:id/credencial-local` | Cambiar la contraseña y revocar sus sesiones activas. |
 
+Las operaciones de historial, puntos de acceso, auditoría y configuración se
+documentan por separado en `administracion_operativa.md`.
+
 La consulta admite `pagina`, `limite`, `buscar` y `estado`, con un máximo de
 100 registros por página. Un administrador no puede deshabilitar su propia
 cuenta ni quitarse su propio rol administrativo.

@@ -162,5 +162,6 @@ ser manipulados. El backend valida consistencia respecto de parámetros locales,
 pero esto no prueba por sí solo la presencia física. Los valores actuales son
 provisionales de desarrollo, no reglas oficiales de la UPT.
 
-La consulta administrativa y paginada del historial se implementará en el
-Hito 8. En este hito los registros ya quedan completos y disponibles en MariaDB.
+La consulta administrativa y paginada del historial está disponible en
+`/api/administracion/accesos`. El contrato y sus reglas de privacidad están
+documentados en `administracion_operativa.md`.

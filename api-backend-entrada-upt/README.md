@@ -33,6 +33,7 @@ npm run dev
 | `GET` | `/api/identidad-digital` | Identidad propia obtenida desde la sesión. |
 | Varios | `/api/codigos-qr/*` | Generación, estado y revocación del QR temporal. |
 | `POST` | `/api/ingresos/validar` | Decisión de acceso reservada al rol `SEGURIDAD`. |
+| `GET` | `/api/ingresos/recientes` | Historial reciente del operador autenticado. |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
@@ -92,6 +93,10 @@ están documentados en `docs/codigos_qr_temporales.md`.
 La validación, el consumo de un solo uso y los motivos de decisión están
 documentados en `docs/validacion_ingresos.md`.
 
+El historial paginado, los puntos de acceso, el resumen, la auditoría y las
+configuraciones permitidas están documentados en
+`docs/administracion_operativa.md`.
+
 ## Pruebas
 
 ```bash
@@ -106,7 +111,9 @@ campos internos, el rechazo de consultas sobre otra persona y la generación,
 caducidad, rotación y revocación de credenciales QR. La validación cubre tokens
 inválidos, alterados, vencidos, revocados y reutilizados; usuarios inactivos,
 rol de seguridad, ubicación, punto de acceso y consumo simultáneo. No se
-ejecutan aplicaciones Flutter durante esta etapa.
+ejecutan aplicaciones Flutter durante esta etapa. La administración operativa
+cubre filtros por usuario, fecha, resultado, motivo, punto y operador, además
+de comprobar la privacidad y autorización de los historiales.
 
 ## Docker
 
