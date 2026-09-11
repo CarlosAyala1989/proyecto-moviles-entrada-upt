@@ -12,6 +12,7 @@ describe('Modelo de datos', () => {
       'configuraciones_sistema',
       'credenciales_acceso',
       'dispositivos',
+      'intentos_inicio_sesion',
       'migraciones_aplicadas',
       'perfiles_academicos',
       'puntos_acceso',
