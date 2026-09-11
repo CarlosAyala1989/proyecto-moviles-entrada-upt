@@ -23,7 +23,7 @@ npm run migrar
 npm run dev
 ```
 
-## Endpoints del Hito 1
+## Endpoints disponibles
 
 | Método | Ruta | Resultado esperado |
 | --- | --- | --- |
@@ -59,9 +59,17 @@ numérico mediante:
 npm run migrar
 ```
 
-La migración inicial crea únicamente `migraciones_aplicadas`, que registra las
-migraciones ejecutadas. Las tablas de usuarios, roles, QR y accesos pertenecen
-al Hito 2 y todavía no se crean.
+Las migraciones crean el control de versiones, el modelo de identidad y acceso,
+los roles iniciales y la configuración provisional de desarrollo. El diseño
+completo está documentado en `docs/modelo_datos.md`.
+
+Para cargar datos completamente ficticios y reproducibles:
+
+```bash
+npm run sembrar:pruebas
+```
+
+La carga es idempotente y se bloquea si `NODE_ENV=production`.
 
 ## Pruebas
 
@@ -69,9 +77,9 @@ al Hito 2 y todavía no se crean.
 npm test
 ```
 
-Las pruebas cubren la API básica, la conexión de salud, JSON inválido, tipo de
-contenido y rutas inexistentes. No se ejecutan aplicaciones Flutter durante
-esta etapa.
+Las pruebas cubren la API básica, conexión de salud, validación HTTP, estructura
+de tablas, catálogos, relaciones, unicidad y rangos geográficos. No se ejecutan
+aplicaciones Flutter durante esta etapa.
 
 ## Docker
 
