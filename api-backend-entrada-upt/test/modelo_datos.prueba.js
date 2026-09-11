@@ -44,7 +44,7 @@ describe('Modelo de datos', () => {
       );
 
       assert.equal(cantidadRoles.total, 5);
-      assert.equal(cantidadConfiguraciones.total, 5);
+      assert.equal(cantidadConfiguraciones.total, 8);
     } finally {
       conexion.release();
     }
