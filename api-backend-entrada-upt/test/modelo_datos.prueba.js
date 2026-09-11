@@ -137,4 +137,25 @@ describe('Modelo de datos', () => {
       conexion.release();
     }
   });
+
+  it('prepara la trazabilidad de ubicación para cada validación', async () => {
+    const columnas = await grupoConexiones.query(
+      `SELECT COLUMN_NAME AS nombre
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'registros_acceso'
+         AND COLUMN_NAME IN (
+           'precision_escaneo_metros',
+           'ubicacion_escaneo_obtenida_en',
+           'distancia_escaneo_metros'
+         )
+       ORDER BY COLUMN_NAME`,
+    );
+
+    assert.deepEqual(columnas.map(({ nombre }) => nombre), [
+      'distancia_escaneo_metros',
+      'precision_escaneo_metros',
+      'ubicacion_escaneo_obtenida_en',
+    ]);
+  });
 });
