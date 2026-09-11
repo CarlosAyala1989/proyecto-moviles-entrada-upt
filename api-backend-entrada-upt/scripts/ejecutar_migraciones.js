@@ -1,17 +1,11 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { grupoConexiones } from '../src/config/database.js';
+import { ejecutarArchivoSql } from '../src/base_datos/archivo_sql.js';
 
 const directorioActual = path.dirname(fileURLToPath(import.meta.url));
 const directorioMigraciones = path.resolve(directorioActual, '../migraciones');
-
-function separarSentencias(contenido) {
-  return contenido
-    .split(/;\s*(?:\r?\n|$)/)
-    .map((sentencia) => sentencia.trim())
-    .filter(Boolean);
-}
 
 async function leerMigraciones() {
   const nombres = await readdir(directorioMigraciones);
@@ -33,13 +27,10 @@ async function ejecutarMigraciones() {
     );
 
     if (!tablaControl) {
-      const contenidoInicial = await readFile(
+      await ejecutarArchivoSql(
+        conexion,
         path.join(directorioMigraciones, migraciones[0]),
-        'utf8',
       );
-      for (const sentencia of separarSentencias(contenidoInicial)) {
-        await conexion.query(sentencia);
-      }
     }
 
     const aplicadas = await conexion.query(
@@ -50,12 +41,9 @@ async function ejecutarMigraciones() {
     for (const archivo of migraciones) {
       if (archivosAplicados.has(archivo)) continue;
 
-      const contenido = await readFile(path.join(directorioMigraciones, archivo), 'utf8');
       await conexion.beginTransaction();
       try {
-        for (const sentencia of separarSentencias(contenido)) {
-          await conexion.query(sentencia);
-        }
+        await ejecutarArchivoSql(conexion, path.join(directorioMigraciones, archivo));
         await conexion.query(
           'INSERT INTO migraciones_aplicadas (archivo) VALUES (?)',
           [archivo],

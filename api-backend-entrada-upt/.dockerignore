@@ -4,5 +4,5 @@ npm-debug.log*
 .env.*
 credenciales_bd_local.txt
 test
+semillas
 coverage
-
