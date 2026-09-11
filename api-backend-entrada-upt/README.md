@@ -29,7 +29,8 @@ npm run dev
 | --- | --- | --- |
 | `GET` | `/api` | Información básica de la API. |
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
-| Varios | `/api/administracion/*` | Administración local protegida de usuarios. |
+| Varios | `/api/autenticacion/*` | Inicio, renovación, consulta y cierre de sesión. |
+| Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
 interrumpir clientes locales ya configurados.
@@ -72,12 +73,12 @@ npm run sembrar:pruebas
 
 La carga es idempotente y se bloquea si `NODE_ENV=production`.
 
-## Administración local
+## Autenticación y administración local
 
 Las operaciones de usuarios y el procedimiento para crear el administrador
-inicial están documentados en `docs/administracion_usuarios.md`. La protección
-con clave de desarrollo es transitoria y está deshabilitada en producción; será
-reemplazada por autenticación y autorización por roles en el Hito 4.
+inicial están documentados en `docs/administracion_usuarios.md`. El contrato de
+sesiones, sus medidas de seguridad y las peticiones HTTP reproducibles están en
+`docs/autenticacion_temporal.md`.
 
 ## Pruebas
 
@@ -85,10 +86,10 @@ reemplazada por autenticación y autorización por roles en el Hito 4.
 npm test
 ```
 
-Las pruebas cubren la API básica, conexión de salud, validación HTTP, estructura
-de tablas, catálogos, relaciones, unicidad, rangos geográficos y el flujo
-administrativo de usuarios. No se ejecutan aplicaciones Flutter durante esta
-etapa.
+Las pruebas cubren la API básica, conexión de salud, modelo de datos,
+autenticación válida e inválida, usuarios inactivos, expiración lógica,
+rotación y revocación de tokens, bloqueo temporal, autorización por roles y el
+flujo administrativo. No se ejecutan aplicaciones Flutter durante esta etapa.
 
 ## Docker
 

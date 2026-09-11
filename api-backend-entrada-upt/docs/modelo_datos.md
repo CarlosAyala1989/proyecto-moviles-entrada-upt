@@ -55,10 +55,9 @@ erDiagram
   únicos; nunca en texto plano.
 - El uso o revocación exige su fecha correspondiente.
 
-La capa de aplicación deberá comprobar además que una sesión y un dispositivo
-pertenecen al mismo usuario, que quien valida posee el rol `SEGURIDAD` y que
-quien asigna roles posee `ADMINISTRADOR`. Esas reglas se implementarán en los
-hitos de administración, autenticación y validación.
+La capa de aplicación comprueba que las sesiones estén activas, vigentes y
+pertenezcan a usuarios habilitados. La asignación de roles exige
+`ADMINISTRADOR`; la validación futura de ingresos exigirá `SEGURIDAD`.
 
 ## Parámetros provisionales
 
