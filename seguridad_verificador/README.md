@@ -25,5 +25,6 @@ La URL se inyecta con `URL_API_UPT`. El valor de desarrollo predeterminado es
 dispositivo físico se deberá usar una dirección local alcanzable y, en un
 entorno real, HTTPS.
 
-No se resolvieron dependencias ni se ejecutó Flutter durante el Hito 9. Los
-archivos de bloqueo se actualizarán cuando se autoricen las pruebas móviles.
+Las dependencias base quedaron resueltas y las pruebas preparadas en el Hito 9
+ya son descubribles por `flutter test`. Las dependencias de cámara y ubicación
+del flujo verificador se incorporarán en el Hito 11.

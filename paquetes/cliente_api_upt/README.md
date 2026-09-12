@@ -14,6 +14,10 @@ El valor predeterminado corresponde al alias del anfitrión usado por un
 emulador Android. Un dispositivo físico debe usar la dirección alcanzable del
 equipo local. En producción se exigirá HTTPS.
 
-Las dependencias están declaradas, pero no se ejecutó ningún comando Flutter
-durante el Hito 9. La resolución y las pruebas quedan para la etapa posterior
-autorizada.
+Las dependencias quedaron resueltas en el Hito 10. El contrato compartido
+incluye consulta de identidad, generación y anulación de credenciales QR,
+validación de ingresos e historial reciente. Sus pruebas se ejecutan con:
+
+```bash
+flutter test
+```
