@@ -19,9 +19,9 @@ class ControladorSesion extends ChangeNotifier {
     required ContratoClienteApi clienteApi,
     required AlmacenSesion almacenSesion,
     required Set<String> rolesPermitidos,
-  })  : _clienteApi = clienteApi,
-        _almacenSesion = almacenSesion,
-        _rolesPermitidos = Set.unmodifiable(rolesPermitidos);
+  }) : _clienteApi = clienteApi,
+       _almacenSesion = almacenSesion,
+       _rolesPermitidos = Set.unmodifiable(rolesPermitidos);
 
   final ContratoClienteApi _clienteApi;
   final AlmacenSesion _almacenSesion;
@@ -140,7 +140,8 @@ class ControladorSesion extends ChangeNotifier {
           await _descartarSesion();
           throw const ExcepcionApi(
             codigo: 'ROL_APLICACION_NO_AUTORIZADO',
-            mensaje: 'La cuenta ya no tiene un rol permitido para esta aplicación.',
+            mensaje:
+                'La cuenta ya no tiene un rol permitido para esta aplicación.',
             estadoHttp: 403,
           );
         }

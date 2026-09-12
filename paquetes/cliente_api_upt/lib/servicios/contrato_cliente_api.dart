@@ -16,6 +16,7 @@ abstract interface class ContratoClienteApi {
     String tokenAcceso,
     UbicacionReportada ubicacion,
   );
+  Future<void> revocarCodigoQr(String tokenAcceso);
   Future<ResultadoValidacionIngreso> validarIngreso({
     required String tokenAcceso,
     required String codigoQr,

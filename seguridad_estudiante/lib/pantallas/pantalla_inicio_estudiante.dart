@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 import '../navegacion/rutas_estudiante.dart';
 
 class PantallaInicioEstudiante extends StatelessWidget {
-  const PantallaInicioEstudiante({
-    required this.controladorSesion,
-    super.key,
-  });
+  const PantallaInicioEstudiante({required this.controladorSesion, super.key});
 
   final ControladorSesion controladorSesion;
 
@@ -39,18 +36,24 @@ class PantallaInicioEstudiante extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.badge_outlined),
               title: const Text('Consultar identidad digital'),
-              subtitle: const Text('Perfil y estado autorizado por el backend.'),
+              subtitle: const Text(
+                'Perfil y estado autorizado por el backend.',
+              ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.pushNamed(context, RutasEstudiante.identidad),
+              onTap: () =>
+                  Navigator.pushNamed(context, RutasEstudiante.identidad),
             ),
           ),
           Card(
             child: ListTile(
               leading: const Icon(Icons.qr_code_2),
               title: const Text('Solicitar código QR'),
-              subtitle: const Text('Credencial temporal para solicitar ingreso.'),
+              subtitle: const Text(
+                'Credencial temporal para solicitar ingreso.',
+              ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.pushNamed(context, RutasEstudiante.codigoQr),
+              onTap: () =>
+                  Navigator.pushNamed(context, RutasEstudiante.codigoQr),
             ),
           ),
         ],

@@ -2,10 +2,7 @@ import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/material.dart';
 
 class PantallaInicioSesion extends StatefulWidget {
-  const PantallaInicioSesion({
-    required this.controladorSesion,
-    super.key,
-  });
+  const PantallaInicioSesion({required this.controladorSesion, super.key});
 
   final ControladorSesion controladorSesion;
 
@@ -76,7 +73,8 @@ class _EstadoPantallaInicioSesion extends State<PantallaInicioSesion> {
                         labelText: 'Código o correo institucional',
                         prefixIcon: Icon(Icons.person_outline),
                       ),
-                      validator: (valor) => valor == null || valor.trim().isEmpty
+                      validator: (valor) =>
+                          valor == null || valor.trim().isEmpty
                           ? 'Ingresa tu identificador.'
                           : null,
                     ),
@@ -112,7 +110,9 @@ class _EstadoPantallaInicioSesion extends State<PantallaInicioSesion> {
                         liveRegion: true,
                         child: Text(
                           mensajeError,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),

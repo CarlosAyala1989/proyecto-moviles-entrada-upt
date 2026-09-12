@@ -19,9 +19,9 @@ class ClienteApi implements ContratoClienteApi {
     String urlBase = ConfiguracionApi.urlBase,
     http.Client? clienteHttp,
     Duration tiempoEspera = ConfiguracionApi.duracionMaximaSolicitud,
-  })  : _urlBase = urlBase.replaceFirst(RegExp(r'/+$'), ''),
-        _clienteHttp = clienteHttp ?? http.Client(),
-        _tiempoEspera = tiempoEspera;
+  }) : _urlBase = urlBase.replaceFirst(RegExp(r'/+$'), ''),
+       _clienteHttp = clienteHttp ?? http.Client(),
+       _tiempoEspera = tiempoEspera;
 
   final String _urlBase;
   final http.Client _clienteHttp;
@@ -32,7 +32,10 @@ class ClienteApi implements ContratoClienteApi {
     return consulta == null ? uri : uri.replace(queryParameters: consulta);
   }
 
-  Map<String, String> _cabeceras({String? tokenAcceso, bool conCuerpo = false}) {
+  Map<String, String> _cabeceras({
+    String? tokenAcceso,
+    bool conCuerpo = false,
+  }) {
     return {
       'accept': 'application/json',
       if (conCuerpo) 'content-type': 'application/json',
@@ -56,8 +59,9 @@ class ClienteApi implements ContratoClienteApi {
       final transmitida = await _clienteHttp
           .send(solicitud)
           .timeout(_tiempoEspera);
-      final respuesta = await http.Response.fromStream(transmitida)
-          .timeout(_tiempoEspera);
+      final respuesta = await http.Response.fromStream(
+        transmitida,
+      ).timeout(_tiempoEspera);
       final contenido = utf8.decode(respuesta.bodyBytes);
       final json = contenido.isEmpty
           ? <String, dynamic>{}
@@ -70,8 +74,9 @@ class ClienteApi implements ContratoClienteApi {
             : <String, dynamic>{};
         throw ExcepcionApi(
           codigo: errorJson['codigo'] as String? ?? 'ERROR_API',
-          mensaje: errorJson['mensaje'] as String?
-              ?? 'El servidor no pudo completar la solicitud.',
+          mensaje:
+              errorJson['mensaje'] as String? ??
+              'El servidor no pudo completar la solicitud.',
           estadoHttp: respuesta.statusCode,
         );
       }
@@ -170,6 +175,15 @@ class ClienteApi implements ContratoClienteApi {
   }
 
   @override
+  Future<void> revocarCodigoQr(String tokenAcceso) async {
+    await _solicitar(
+      metodo: 'DELETE',
+      ruta: '/codigos-qr/actual',
+      tokenAcceso: tokenAcceso,
+    );
+  }
+
+  @override
   Future<ResultadoValidacionIngreso> validarIngreso({
     required String tokenAcceso,
     required String codigoQr,
@@ -202,9 +216,11 @@ class ClienteApi implements ContratoClienteApi {
     );
     final datos = respuesta['datos'] as List<dynamic>;
     return datos
-        .map((json) => RegistroIngresoReciente.desdeJson(
-              Map<String, dynamic>.from(json as Map),
-            ))
+        .map(
+          (json) => RegistroIngresoReciente.desdeJson(
+            Map<String, dynamic>.from(json as Map),
+          ),
+        )
         .toList(growable: false);
   }
 

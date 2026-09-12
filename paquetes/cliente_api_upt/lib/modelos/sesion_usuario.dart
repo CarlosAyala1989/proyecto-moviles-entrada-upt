@@ -13,7 +13,9 @@ class SesionUsuario {
     return SesionUsuario(
       tokenAcceso: json['token_acceso'] as String,
       tokenRenovacion: json['token_renovacion'] as String,
-      tokenAccesoExpiraEn: DateTime.parse(json['token_acceso_expira_en'] as String),
+      tokenAccesoExpiraEn: DateTime.parse(
+        json['token_acceso_expira_en'] as String,
+      ),
       tokenRenovacionExpiraEn: DateTime.parse(
         json['token_renovacion_expira_en'] as String,
       ),
@@ -33,9 +35,8 @@ class SesionUsuario {
     tokenAccesoExpiraEn.subtract(const Duration(seconds: 30)),
   );
 
-  bool renovacionVencida(DateTime ahora) => !ahora.isBefore(
-    tokenRenovacionExpiraEn,
-  );
+  bool renovacionVencida(DateTime ahora) =>
+      !ahora.isBefore(tokenRenovacionExpiraEn);
 
   SesionUsuario conUsuario(UsuarioSesion usuarioActualizado) => SesionUsuario(
     tokenAcceso: tokenAcceso,

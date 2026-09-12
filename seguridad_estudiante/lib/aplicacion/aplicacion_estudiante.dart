@@ -1,7 +1,10 @@
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/material.dart';
 
+import '../controladores/controlador_identidad_qr.dart';
 import '../navegacion/rutas_estudiante.dart';
+import '../pantallas/pantalla_codigo_qr.dart';
+import '../pantallas/pantalla_identidad_digital.dart';
 import '../pantallas/pantalla_inicio_estudiante.dart';
 import '../pantallas/pantalla_inicio_sesion.dart';
 import '../pantallas/pantalla_preparacion.dart';
@@ -10,10 +13,12 @@ import '../tema/tema_upt.dart';
 class AplicacionEstudiante extends StatelessWidget {
   const AplicacionEstudiante({
     required this.controladorSesion,
+    required this.controladorIdentidadQr,
     super.key,
   });
 
   final ControladorSesion controladorSesion;
+  final ControladorIdentidadQr controladorIdentidadQr;
 
   @override
   Widget build(BuildContext context) {
@@ -22,24 +27,16 @@ class AplicacionEstudiante extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: construirTemaUpt(),
       routes: {
-        RutasEstudiante.identidad: (_) => const PantallaPreparacion(
-          titulo: 'Identidad digital',
-          descripcion: 'La consulta del perfil se completará en el Hito 10.',
-          icono: Icons.badge_outlined,
-        ),
-        RutasEstudiante.codigoQr: (_) => const PantallaPreparacion(
-          titulo: 'Código QR temporal',
-          descripcion: 'La solicitud y visualización se completarán en el Hito 10.',
-          icono: Icons.qr_code_2,
-        ),
+        RutasEstudiante.identidad: (_) =>
+            PantallaIdentidadDigital(controlador: controladorIdentidadQr),
+        RutasEstudiante.codigoQr: (_) =>
+            PantallaCodigoQr(controlador: controladorIdentidadQr),
       },
       home: AnimatedBuilder(
         animation: controladorSesion,
         builder: (context, _) {
-          if (
-            controladorSesion.estado == EstadoSesion.restaurando
-            || controladorSesion.estado == EstadoSesion.cerrando
-          ) {
+          if (controladorSesion.estado == EstadoSesion.restaurando ||
+              controladorSesion.estado == EstadoSesion.cerrando) {
             return const PantallaPreparacion(
               titulo: 'Identidad Digital UPT',
               descripcion: 'Preparando una sesión segura…',

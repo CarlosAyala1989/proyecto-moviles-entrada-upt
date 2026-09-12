@@ -7,7 +7,7 @@ import 'almacen_sesion.dart';
 
 class AlmacenSesionSegura implements AlmacenSesion {
   AlmacenSesionSegura({FlutterSecureStorage? almacenamiento})
-      : _almacenamiento = almacenamiento ?? FlutterSecureStorage();
+    : _almacenamiento = almacenamiento ?? FlutterSecureStorage();
 
   static const _claveSesion = 'upt_sesion_autenticada';
   final FlutterSecureStorage _almacenamiento;
