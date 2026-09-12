@@ -1,0 +1,212 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
+import '../configuracion/configuracion_api.dart';
+import '../modelos/codigo_qr_temporal.dart';
+import '../modelos/identidad_digital.dart';
+import '../modelos/registro_ingreso_reciente.dart';
+import '../modelos/resultado_validacion_ingreso.dart';
+import '../modelos/sesion_usuario.dart';
+import '../modelos/ubicacion_reportada.dart';
+import '../modelos/usuario_sesion.dart';
+import 'contrato_cliente_api.dart';
+import 'excepcion_api.dart';
+
+class ClienteApi implements ContratoClienteApi {
+  ClienteApi({
+    String urlBase = ConfiguracionApi.urlBase,
+    http.Client? clienteHttp,
+    Duration tiempoEspera = ConfiguracionApi.duracionMaximaSolicitud,
+  })  : _urlBase = urlBase.replaceFirst(RegExp(r'/+$'), ''),
+        _clienteHttp = clienteHttp ?? http.Client(),
+        _tiempoEspera = tiempoEspera;
+
+  final String _urlBase;
+  final http.Client _clienteHttp;
+  final Duration _tiempoEspera;
+
+  Uri _construirUri(String ruta, [Map<String, String>? consulta]) {
+    final uri = Uri.parse('$_urlBase$ruta');
+    return consulta == null ? uri : uri.replace(queryParameters: consulta);
+  }
+
+  Map<String, String> _cabeceras({String? tokenAcceso, bool conCuerpo = false}) {
+    return {
+      'accept': 'application/json',
+      if (conCuerpo) 'content-type': 'application/json',
+      if (tokenAcceso != null) 'authorization': 'Bearer $tokenAcceso',
+    };
+  }
+
+  Future<Map<String, dynamic>> _solicitar({
+    required String metodo,
+    required String ruta,
+    String? tokenAcceso,
+    Map<String, dynamic>? cuerpo,
+    Map<String, String>? consulta,
+  }) async {
+    try {
+      final solicitud = http.Request(metodo, _construirUri(ruta, consulta));
+      solicitud.headers.addAll(
+        _cabeceras(tokenAcceso: tokenAcceso, conCuerpo: cuerpo != null),
+      );
+      if (cuerpo != null) solicitud.body = jsonEncode(cuerpo);
+      final transmitida = await _clienteHttp
+          .send(solicitud)
+          .timeout(_tiempoEspera);
+      final respuesta = await http.Response.fromStream(transmitida)
+          .timeout(_tiempoEspera);
+      final contenido = utf8.decode(respuesta.bodyBytes);
+      final json = contenido.isEmpty
+          ? <String, dynamic>{}
+          : Map<String, dynamic>.from(jsonDecode(contenido) as Map);
+
+      if (respuesta.statusCode < 200 || respuesta.statusCode >= 300) {
+        final error = json['error'];
+        final errorJson = error is Map
+            ? Map<String, dynamic>.from(error)
+            : <String, dynamic>{};
+        throw ExcepcionApi(
+          codigo: errorJson['codigo'] as String? ?? 'ERROR_API',
+          mensaje: errorJson['mensaje'] as String?
+              ?? 'El servidor no pudo completar la solicitud.',
+          estadoHttp: respuesta.statusCode,
+        );
+      }
+      return json;
+    } on ExcepcionApi {
+      rethrow;
+    } on TimeoutException {
+      throw const ExcepcionApi(
+        codigo: 'TIEMPO_ESPERA_AGOTADO',
+        mensaje: 'El servidor tardó demasiado en responder.',
+      );
+    } on http.ClientException {
+      throw const ExcepcionApi(
+        codigo: 'ERROR_CONEXION',
+        mensaje: 'No fue posible conectar con el servidor.',
+      );
+    } on FormatException {
+      throw const ExcepcionApi(
+        codigo: 'RESPUESTA_INVALIDA',
+        mensaje: 'El servidor devolvió una respuesta no válida.',
+      );
+    }
+  }
+
+  Map<String, dynamic> _datos(Map<String, dynamic> respuesta) {
+    return Map<String, dynamic>.from(respuesta['datos'] as Map);
+  }
+
+  @override
+  Future<SesionUsuario> iniciarSesion(
+    String identificador,
+    String contrasena,
+  ) async {
+    final respuesta = await _solicitar(
+      metodo: 'POST',
+      ruta: '/autenticacion/iniciar-sesion',
+      cuerpo: {'identificador': identificador, 'contrasena': contrasena},
+    );
+    return SesionUsuario.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<SesionUsuario> renovarSesion(String tokenRenovacion) async {
+    final respuesta = await _solicitar(
+      metodo: 'POST',
+      ruta: '/autenticacion/renovar-sesion',
+      cuerpo: {'token_renovacion': tokenRenovacion},
+    );
+    return SesionUsuario.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<UsuarioSesion> consultarSesion(String tokenAcceso) async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/autenticacion/sesion',
+      tokenAcceso: tokenAcceso,
+    );
+    final datos = _datos(respuesta);
+    return UsuarioSesion.desdeJson(
+      Map<String, dynamic>.from(datos['usuario'] as Map),
+    );
+  }
+
+  @override
+  Future<void> cerrarSesion(String tokenAcceso) async {
+    await _solicitar(
+      metodo: 'POST',
+      ruta: '/autenticacion/cerrar-sesion',
+      tokenAcceso: tokenAcceso,
+    );
+  }
+
+  @override
+  Future<IdentidadDigital> consultarIdentidadDigital(String tokenAcceso) async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/identidad-digital',
+      tokenAcceso: tokenAcceso,
+    );
+    return IdentidadDigital.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<CodigoQrTemporal> generarCodigoQr(
+    String tokenAcceso,
+    UbicacionReportada ubicacion,
+  ) async {
+    final respuesta = await _solicitar(
+      metodo: 'POST',
+      ruta: '/codigos-qr',
+      tokenAcceso: tokenAcceso,
+      cuerpo: {'ubicacion': ubicacion.aJson()},
+    );
+    return CodigoQrTemporal.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<ResultadoValidacionIngreso> validarIngreso({
+    required String tokenAcceso,
+    required String codigoQr,
+    required String puntoAccesoCodigo,
+    required UbicacionReportada ubicacion,
+  }) async {
+    final respuesta = await _solicitar(
+      metodo: 'POST',
+      ruta: '/ingresos/validar',
+      tokenAcceso: tokenAcceso,
+      cuerpo: {
+        'codigo_qr': codigoQr,
+        'punto_acceso_codigo': puntoAccesoCodigo,
+        'ubicacion': ubicacion.aJson(),
+      },
+    );
+    return ResultadoValidacionIngreso.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
+    String tokenAcceso, {
+    int limite = 20,
+  }) async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/ingresos/recientes',
+      tokenAcceso: tokenAcceso,
+      consulta: {'limite': '$limite'},
+    );
+    final datos = respuesta['datos'] as List<dynamic>;
+    return datos
+        .map((json) => RegistroIngresoReciente.desdeJson(
+              Map<String, dynamic>.from(json as Map),
+            ))
+        .toList(growable: false);
+  }
+
+  void cerrarCliente() => _clienteHttp.close();
+}

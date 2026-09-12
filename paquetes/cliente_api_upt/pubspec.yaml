@@ -1,0 +1,18 @@
+name: cliente_api_upt
+description: Cliente compartido para la API de identidad y acceso UPT.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^11.1.1
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
