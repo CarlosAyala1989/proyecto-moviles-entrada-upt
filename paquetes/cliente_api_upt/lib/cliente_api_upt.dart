@@ -13,3 +13,4 @@ export 'sesion/almacen_sesion.dart';
 export 'sesion/almacen_sesion_segura.dart';
 export 'sesion/controlador_sesion.dart';
 export 'utilidades/estado_carga.dart';
+export 'widgets/pantalla_configuracion_invalida.dart';
