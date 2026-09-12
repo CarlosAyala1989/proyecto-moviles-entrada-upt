@@ -26,5 +26,8 @@ La URL se inyecta con `URL_API_UPT`. El valor de desarrollo predeterminado es
 dispositivo físico se deberá usar una dirección local alcanzable y, en un
 entorno real, HTTPS.
 
+Una compilación de producción con HTTP o una URL inválida muestra un error de
+configuración antes de restaurar la sesión.
+
 Las dependencias están fijadas en `pubspec.lock`. La verificación local se
 ejecuta con `flutter analyze`, `flutter test` y `flutter build apk --debug`.

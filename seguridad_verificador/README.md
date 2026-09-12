@@ -35,6 +35,9 @@ El código del punto de acceso se fija en compilación. `PRUEBA-LOCAL` sirve
 --dart-define=PUNTO_ACCESO_CODIGO=PUERTA-PRINCIPAL
 ```
 
+Las compilaciones de producción rechazan HTTP y también el punto ficticio
+`PRUEBA-LOCAL` antes de restaurar la sesión.
+
 Una ejecución local completa puede combinar ambas opciones:
 
 ```bash
