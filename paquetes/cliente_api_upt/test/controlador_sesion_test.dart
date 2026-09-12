@@ -23,7 +23,10 @@ class AlmacenSesionFalso implements AlmacenSesion {
 }
 
 class ClienteApiFalso implements ContratoClienteApi {
-  ClienteApiFalso({required this.sesionInicio, required this.usuarioConsultado});
+  ClienteApiFalso({
+    required this.sesionInicio,
+    required this.usuarioConsultado,
+  });
 
   SesionUsuario sesionInicio;
   UsuarioSesion usuarioConsultado;
@@ -60,6 +63,10 @@ class ClienteApiFalso implements ContratoClienteApi {
     String tokenAcceso,
     UbicacionReportada ubicacion,
   ) => throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<void> revocarCodigoQr(String tokenAcceso) =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
 
   @override
   Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
