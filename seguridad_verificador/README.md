@@ -1,16 +1,29 @@
-# seguridad_verificador
+# Aplicación de control de acceso
 
-A new Flutter project.
+Aplicación Flutter destinada al personal de seguridad de la UPT. La base del
+Hito 9 incluye inicio de sesión restringido al rol `SEGURIDAD`, restauración
+segura de sesión, navegación y pantallas preparadas para el escáner y el
+historial reciente.
 
-## Getting Started
+## Estructura
 
-This project is a starting point for a Flutter application.
+- `lib/aplicacion`: configuración principal de la aplicación.
+- `lib/navegacion`: nombres de rutas.
+- `lib/pantallas`: inicio de sesión, inicio y estados de preparación.
+- `lib/tema`: tema visual base.
+- `../paquetes/cliente_api_upt`: modelos, cliente HTTP y manejo compartido de
+  sesión.
 
-A few resources to get you started if this is your first Flutter project:
+El escaneo y la presentación de la respuesta se implementarán en el Hito 11.
+La aplicación sólo enviará el código y la ubicación declarada; el backend es
+la única autoridad que permite o deniega un ingreso.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Configuración del backend
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+La URL se inyecta con `URL_API_UPT`. El valor de desarrollo predeterminado es
+`http://10.0.2.2:3000/api`, el alias del equipo anfitrión en Android. Para un
+dispositivo físico se deberá usar una dirección local alcanzable y, en un
+entorno real, HTTPS.
+
+No se resolvieron dependencias ni se ejecutó Flutter durante el Hito 9. Los
+archivos de bloqueo se actualizarán cuando se autoricen las pruebas móviles.
