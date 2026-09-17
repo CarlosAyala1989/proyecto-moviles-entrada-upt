@@ -6,6 +6,7 @@ directorio_proyecto="$(cd "$directorio_script/.." && pwd)"
 
 cd "$directorio_proyecto/seguridad_estudiante"
 exec flutter run -d linux \
+  --dart-define=URL_API_UPT=http://127.0.0.1:3000/api \
   --dart-define=UBICACION_DESARROLLO_SIMULADA=true \
   --dart-define=UBICACION_DESARROLLO_LATITUD=-18.013 \
   --dart-define=UBICACION_DESARROLLO_LONGITUD=-70.251 \

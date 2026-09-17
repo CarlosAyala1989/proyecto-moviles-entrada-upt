@@ -146,7 +146,7 @@ En otra terminal:
 ```bash
 cd /VMQEMU/proyecto-moviles-entrada-upt/seguridad_estudiante
 flutter pub get --enforce-lockfile
-flutter run -d Linux
+flutter run -d Linux --dart-define=URL_API_UPT=http://127.0.0.1:3000/api
 ```
 
 En la aplicación:
@@ -164,7 +164,7 @@ Conecta el dispositivo o emulador mediante ADB y ejecuta:
 ```bash
 adb reverse tcp:3000 tcp:3000
 cd /VMQEMU/proyecto-moviles-entrada-upt/seguridad_estudiante
-flutter run
+flutter run --dart-define=URL_API_UPT=http://127.0.0.1:3000/api
 ```
 
 Así Flutter y el navegador Android pueden alcanzar `127.0.0.1:3000`. No uses

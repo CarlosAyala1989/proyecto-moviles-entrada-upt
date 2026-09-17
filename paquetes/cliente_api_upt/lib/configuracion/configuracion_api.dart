@@ -1,9 +1,9 @@
 abstract final class ConfiguracionApi {
   static const urlBase = String.fromEnvironment(
     'URL_API_UPT',
-    // Flutter Linux y la API Node se ejecutan en el mismo equipo durante el
-    // desarrollo local. Android debe sobrescribir este valor con 10.0.2.2.
-    defaultValue: 'http://127.0.0.1:3000/api',
+    // Ambas aplicaciones usan la API desplegada. La URL puede sobrescribirse
+    // mediante URL_API_UPT al compilar para desarrollo local.
+    defaultValue: 'https://api-moviles.fottuto.men/api',
   );
 
   static const duracionMaximaSolicitud = Duration(seconds: 15);

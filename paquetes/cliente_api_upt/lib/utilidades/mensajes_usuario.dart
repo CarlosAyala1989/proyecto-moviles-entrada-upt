@@ -83,7 +83,7 @@ String mensajeErrorParaUsuario(String codigo) {
     'NAVEGACION_INTRANET_INVALIDA':
         'La intranet no completó el ingreso. Vuelve a intentarlo.',
     'PERFIL_INTRANET_NO_ENCONTRADO':
-        'Ingresaste correctamente, pero no encontramos tus datos de estudiante. Pide ayuda a la universidad.',
+        'La intranet permitió el acceso, pero no pudimos leer tus datos. Carga otra imagen e inténtalo nuevamente.',
     'CODIGO_INTRANET_NO_COINCIDE':
         'El código obtenido no coincide con el que ingresaste. Pide ayuda a la universidad.',
     'GOOGLE_OAUTH_NO_CONFIGURADO':

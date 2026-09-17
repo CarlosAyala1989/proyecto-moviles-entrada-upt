@@ -31,19 +31,29 @@ function decodificarHtml(texto) {
     .trim();
 }
 
-function extraerPerfilTexto(texto) {
+export function extraerPerfilTexto(texto) {
+  const codigos = [...new Set(texto.match(/\b\d{10}\b/gu) ?? [])];
+  // No se elige un código entre varias identidades ni se usa el ingresado
+  // como sustituto de lo que realmente muestra la intranet.
+  if (codigos.length !== 1) return null;
+  const patronNombre = /^[A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ '\-]+,\s*[A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ '\-]+$/iu;
   const lineas = texto.split(/\r?\n/gu).map((linea) => linea.trim()).filter(Boolean);
-  for (const [indice, linea] of lineas.entries()) {
-    if (/^\d{10}$/.test(linea) && indice > 0) {
-      return { nombre_apellidos: lineas[indice - 1], codigo: linea };
-    }
+  // Tesseract puede leer columnas en otro orden o intercalar el menú entre
+  // nombre y código. El script original también los buscaba por separado.
+  const nombres = new Set();
+  for (const linea of lineas) {
+    const sinEtiqueta = linea.replace(
+      /^(?:ESTUDIANTE|ALUMNO|NOMBRES?(?: Y APELLIDOS)?|APELLIDOS Y NOMBRES)\s*:\s*/iu,
+      '',
+    );
+    if (patronNombre.test(sinEtiqueta)) nombres.add(sinEtiqueta);
+    const coincidencia = sinEtiqueta.toUpperCase().match(
+      /([A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ '\-]+,\s*[A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ '\-]+?)\s*(?:C[ÓO]DIGO\s*:?\s*)?(\d{10})/u,
+    );
+    if (coincidencia) nombres.add(coincidencia[1].trim());
   }
-
-  const coincidencia = texto.toUpperCase().replace(/\s+/gu, ' ').match(
-    /([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+,\s*[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)\s*(?:C[ÓO]DIGO\s*:?\s*)?(\d{10})/u,
-  );
-  return coincidencia
-    ? { nombre_apellidos: coincidencia[1].trim(), codigo: coincidencia[2] }
+  return nombres.size === 1
+    ? { nombre_apellidos: [...nombres][0], codigo: codigos[0] }
     : null;
 }
 
@@ -146,8 +156,12 @@ async function extraerPerfilConOcr(pagina) {
         );
         const perfil = extraerPerfilTexto(stdout);
         if (perfil) return perfil;
-      } catch {
+        console.warn(
+          `OCR de intranet sin perfil reconocible (captura ${indice}, ${stdout.length} caracteres).`,
+        );
+      } catch (error) {
         // El OCR es el último recurso; la extracción DOM sigue siendo principal.
+        console.warn('No se pudo ejecutar el OCR de intranet:', error.code ?? 'ERROR_OCR');
       }
     }
     return null;

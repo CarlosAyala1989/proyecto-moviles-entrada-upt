@@ -37,13 +37,20 @@ npm run sembrar:pruebas
 npm run dev
 ```
 
-Al ejecutar Flutter en Linux, ambas aplicaciones usan de forma predeterminada
-`http://127.0.0.1:3000/api`, que coincide con el puerto de la API. Con la API
-ya iniciada en otra terminal, basta con:
+Ambas aplicaciones usan de forma predeterminada la API desplegada en
+`https://api-moviles.fottuto.men/api`, en Linux y Android. Para ejecutar el
+estudiante contra esa API:
 
 ```bash
 cd seguridad_estudiante
 flutter run -d Linux
+```
+
+Para trabajar contra el backend local iniciado en otra terminal, sobrescribe
+la URL al ejecutar cualquiera de las aplicaciones:
+
+```bash
+flutter run -d Linux --dart-define=URL_API_UPT=http://127.0.0.1:3000/api
 ```
 
 Ese comando usa la ubicación real de GeoClue y, por diseño, no genera el QR si
@@ -61,7 +68,9 @@ El verificador local necesita además el código del punto de acceso:
 
 ```bash
 cd seguridad_verificador
-flutter run -d Linux --dart-define=PUNTO_ACCESO_CODIGO=PUERTA-PRINCIPAL
+flutter run -d Linux \
+  --dart-define=URL_API_UPT=http://127.0.0.1:3000/api \
+  --dart-define=PUNTO_ACCESO_CODIGO=PUERTA-PRINCIPAL
 ```
 
 Para probar en Linux el flujo completo con la misma puerta y ubicación
@@ -81,7 +90,7 @@ OAuth usan el mismo `127.0.0.1:3000` registrado en Google:
 ```bash
 adb reverse tcp:3000 tcp:3000
 cd seguridad_estudiante
-flutter run
+flutter run --dart-define=URL_API_UPT=http://127.0.0.1:3000/api
 ```
 
 El verificador, que no recibe el callback OAuth, también puede usar `10.0.2.2`

@@ -65,11 +65,12 @@ npm run dev
 # En otra terminal
 cd seguridad_estudiante
 flutter pub get --enforce-lockfile
-flutter run -d Linux
+flutter run -d Linux --dart-define=URL_API_UPT=http://127.0.0.1:3000/api
 ```
 
 Para Android conectado por ADB, ejecuta antes `adb reverse tcp:3000 tcp:3000`
-y conserva la URL predeterminada. En producción configura
-`URL_API_UPT=https://.../api` y el callback HTTPS equivalente.
+y sobrescribe la URL con `--dart-define=URL_API_UPT=http://127.0.0.1:3000/api`.
+Ambas aplicaciones usan por defecto `https://api-moviles.fottuto.men/api`;
+para ese despliegue configura el callback HTTPS equivalente en el backend y Google.
 
 Referencias oficiales: [OAuth para servidores web](https://developers.google.com/identity/protocols/oauth2/web-server), [OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect) y [referencia de claims](https://developers.google.com/identity/openid-connect/reference).

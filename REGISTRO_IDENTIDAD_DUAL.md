@@ -29,6 +29,8 @@ La conciliación, OAuth simulado, persistencia real en MariaDB, contrato HTTP y 
 
 El adaptador Node reproduce el comportamiento de `/VMQEMU/SCRAP/ScrapEstudiante.py` mediante `playwright-core`, Chrome/Chromium y Tesseract: usa una sesión temporal, muestra el CAPTCHA al estudiante y respeta el teclado aleatorio. No guarda contraseñas y no intenta resolver ni eludir el CAPTCHA. Para múltiples instancias de API, las transacciones temporales deben migrarse de memoria a Redis con expiración de cinco minutos; además, el mismo proceso debe conservar el contexto del navegador mientras dura la transacción.
 
+La lectura OCR acepta nombre y código en líneas separadas, incluso cuando el código aparece primero o hay etiquetas y texto del menú entre ambos. No incorpora ese texto intermedio al nombre y rechaza códigos o nombres ambiguos. Si Tesseract no puede ejecutarse, el backend registra únicamente el código del error, sin guardar capturas, contraseñas ni texto del perfil. `PERFIL_INTRANET_NO_ENCONTRADO` indica un fallo de extracción después del acceso; no demuestra que el estudiante carezca de datos en la universidad.
+
 Flutter no abre la intranet, no interpreta HTML y no ejecuta Python: únicamente consume los dos endpoints de Express y muestra/envía los campos. El cliente permite hasta 45 segundos para obtener el CAPTCHA y 120 segundos para completar la verificación; el resto de endpoints conserva el límite general de 15 segundos.
 
 Google recomienda verificar el token en el servidor, comprobar `hd` para restringir el dominio y usar `sub` como identificador estable: [OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect) y [referencia de credenciales](https://developers.google.com/identity/openid-connect/reference).

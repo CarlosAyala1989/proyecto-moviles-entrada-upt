@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import {
   codificarContrasenaIntranet,
   extraerPerfilIntranet,
+  extraerPerfilTexto,
   extraerTecladoIntranet,
   ServicioIntranetUpt,
 } from '../src/modulos/registro_estudiante/servicios/intranet_upt.servicio.js';
@@ -31,6 +32,31 @@ describe('Proveedor de intranet UPT', () => {
       ),
       { nombre_apellidos: 'AYALA RAMOS, CARLOS DANIEL', codigo: '2022074266' },
     );
+  });
+
+  it('lee un encabezado OCR con nombre y código separados o en distinto orden', () => {
+    for (const texto of [
+      'AYALA RAMOS, CARLOS DANIEL\nDatos del estudiante\nCódigo: 2022074266',
+      'Código: 2022074266\nDatos del estudiante\nAYALA RAMOS, CARLOS DANIEL',
+      'Estudiante: AYALA RAMOS, CARLOS DANIEL\nCódigo: 2022074266',
+      'AYALA RAMOS, CARLOS DANIEL Código: 2022074266',
+    ]) {
+      assert.deepEqual(extraerPerfilTexto(texto), {
+        nombre_apellidos: 'AYALA RAMOS, CARLOS DANIEL',
+        codigo: '2022074266',
+      });
+    }
+  });
+
+  it('no confunde texto del menú con un nombre ni acepta identidades ambiguas', () => {
+    for (const texto of [
+      'Notas\n2022074266',
+      'AYALA RAMOS, CARLOS DANIEL\nCódigo: 2022074266\nCódigo: 2021051033',
+      'AYALA RAMOS, CARLOS DANIEL\nCASTILLO FLORES, DIEGO\nCódigo: 2022074266',
+      'AYALA RAMOS, CARLOS DANIEL\nSin código disponible',
+    ]) {
+      assert.equal(extraerPerfilTexto(texto), null);
+    }
   });
 
   it('mantiene el CAPTCHA y el teclado dentro de una transacción de un solo uso', async () => {
