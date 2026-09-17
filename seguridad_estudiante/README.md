@@ -23,11 +23,21 @@ siempre pertenece al backend.
 
 ## Configuración del backend
 
-La URL se inyecta con `URL_API_UPT`. El valor de desarrollo predeterminado es
-`http://127.0.0.1:3000/api`, por lo que en Linux, con la API iniciada en el
-puerto 3000, se ejecuta directamente con `flutter run -d Linux`. Para llamadas
-sin OAuth un emulador Android también puede usar
-`http://10.0.2.2:3000/api`; en un entorno real se debe usar HTTPS.
+La URL se inyecta con `URL_API_UPT`. El valor predeterminado es
+`https://api-moviles.fottuto.men/api`; en Linux se ejecuta con
+`flutter run -d linux`. Después de verificar la intranet, pulsa
+**Continuar con Google institucional** y completa el acceso en el navegador.
+La aplicación consulta a la API y adopta la sesión cuando termina Google.
+
+Las credenciales OAuth se configuran en la API de Dokploy, con el callback
+`https://api-moviles.fottuto.men/api/registro-estudiante/google/callback`,
+incluso si la aplicación se ejecuta en Linux. Consulta
+[la configuración de Google](../CONFIGURACION_GOOGLE_OAUTH.md#dokploy-y-aplicación-de-estudiante).
+
+Para una API local, ejecuta
+`flutter run -d linux --dart-define=URL_API_UPT=http://127.0.0.1:3000/api`.
+Para llamadas sin OAuth un emulador Android también puede usar
+`http://10.0.2.2:3000/api`.
 
 Para el registro Google local en Android se recomienda `adb reverse tcp:3000
 tcp:3000` y conservar `http://127.0.0.1:3000/api`; de ese modo el navegador del

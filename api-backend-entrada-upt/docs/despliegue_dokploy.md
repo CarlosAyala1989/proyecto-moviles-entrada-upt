@@ -6,6 +6,12 @@ La API usa las variables de entorno del contenedor para crear su pool de conexio
 
 En el servicio de la **API**, abre **Environment**, agrega o actualiza estas variables y guarda. Conserva las variables Google OAuth que ya tengas configuradas.
 
+Para habilitar el botón Google de la aplicación estudiante, configura además
+las cuatro variables `GOOGLE_` y el callback HTTPS descritos en
+[Configuración de Google OAuth](../../CONFIGURACION_GOOGLE_OAUTH.md#dokploy-y-aplicación-de-estudiante).
+El archivo privado `.env.dokploy` incluye ambos bloques; debe copiarse a
+**Environment** y aplicarse con un nuevo despliegue.
+
 ```dotenv
 NODE_ENV=production
 PORT=3000

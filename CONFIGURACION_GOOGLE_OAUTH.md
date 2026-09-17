@@ -28,8 +28,8 @@ el claim firmado devuelto por Google.
 3. Crea un cliente OAuth de tipo **Web application**.
 4. Agrega como redirect URI autorizado, con coincidencia exacta:
    `http://127.0.0.1:3000/api/registro-estudiante/google/callback`.
-5. Para producción agrega otro callback sobre un dominio propio con HTTPS,
-   por ejemplo `https://api.example.edu/api/registro-estudiante/google/callback`.
+5. Para el despliegue de Dokploy agrega también
+   `https://api-moviles.fottuto.men/api/registro-estudiante/google/callback`.
    Google exige página principal, privacidad y condiciones para una aplicación
    publicada.
 
@@ -53,6 +53,39 @@ GOOGLE_WORKSPACE_DOMAIN=virtual.upt.pe
 
 El URI debe coincidir carácter por carácter con Google Cloud. No confirmes
 `.env`, JSON de credenciales ni secretos en Git.
+
+## Dokploy y aplicación de estudiante
+
+En **Environment** de la aplicación API, agrega estas cuatro variables sin
+borrar las de MySQL:
+
+```dotenv
+GOOGLE_OAUTH_CLIENT_ID=PEGA_EL_CLIENT_ID_DE_LA_IMAGEN
+GOOGLE_OAUTH_CLIENT_SECRET=PEGA_EL_SECRETO_COMPLETO_DEL_MISMO_CLIENTE
+GOOGLE_OAUTH_REDIRECT_URI=https://api-moviles.fottuto.men/api/registro-estudiante/google/callback
+GOOGLE_WORKSPACE_DOMAIN=virtual.upt.pe
+```
+
+El archivo privado `api-backend-entrada-upt/.env.dokploy` contiene los valores
+preparados a partir de las credenciales locales. Está ignorado por Git y Docker:
+se deben copiar al editor **Environment** de Dokploy. Guarda y vuelve a
+desplegar la API para que el proceso reciba las variables nuevas.
+
+El cliente **Aplicación web** sirve para este flujo. Los **Orígenes autorizados
+de JavaScript** permanecen vacíos. Mantén los dos callbacks autorizados, local
+y HTTPS, con la ruta completa `/api/registro-estudiante/google/callback` y
+sin una barra final. `****4bJ0` es una máscara, no el secreto que debe usarse.
+El nombre «Desarrollo local» es una etiqueta y no cambia el funcionamiento.
+
+Si la audiencia es **External / Testing**, añade el correo institucional del
+estudiante en **Test users**. Esa configuración no se puede confirmar a partir
+de la pantalla del cliente OAuth.
+
+La aplicación ya usa la API HTTPS y abre Google mediante `url_launcher` en
+el navegador externo. Tras verificar la intranet, pulsa **Continuar con
+Google institucional**, elige la cuenta `@virtual.upt.pe` de la misma persona
+y vuelve a la aplicación al terminar. No se configura un callback local ni
+un secreto de Google dentro de Flutter para usar la API de Dokploy.
 
 ## Ejecución local
 
