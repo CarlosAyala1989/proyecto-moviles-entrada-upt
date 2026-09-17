@@ -12,10 +12,12 @@ export function separarSentenciasSql(contenido) {
     .filter(Boolean);
 }
 
-export async function ejecutarArchivoSql(conexion, rutaArchivo) {
+export async function ejecutarArchivoSql(conexion, rutaArchivo, {
+  transformarSentencia = (sentencia) => sentencia,
+} = {}) {
   const contenido = await readFile(rutaArchivo, 'utf8');
 
   for (const sentencia of separarSentenciasSql(contenido)) {
-    await conexion.query(sentencia);
+    await conexion.query(transformarSentencia(sentencia));
   }
 }

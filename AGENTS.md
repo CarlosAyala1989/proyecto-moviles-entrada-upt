@@ -32,3 +32,5 @@ History uses Spanish subjects with prefixes `feat:`, `test:`, and `docs:`. Keep 
 ## Security & Configuration
 
 Keep `.env` and `credenciales*.txt` untracked; use `.env.example` as reference. Preserve lockfiles and existing worktree changes. Keep authorization and QR consumption in the backend; Flutter must never connect directly to MariaDB.
+
+Every schema change must include a new numbered SQL migration in `api-backend-entrada-upt/migraciones/`, committed with the API change. Never edit or rename migrations already applied. API startup applies pending migrations automatically before listening, including Dokploy deployments. Use incremental SQL compatible with MySQL 8 and MariaDB and `utf8mb4_unicode_ci` for new explicit collations. Keep changes compatible with the previous API during rolling deployments; a code rollback does not roll back DDL.

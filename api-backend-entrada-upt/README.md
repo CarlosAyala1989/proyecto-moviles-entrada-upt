@@ -59,11 +59,19 @@ La respuesta esperada es `200 OK` con un cuerpo como:
 ## Migraciones
 
 Las migraciones SQL se encuentran en `migraciones/` y se aplican en orden
-numérico mediante:
+numérico automáticamente al arrancar la API, antes de aceptar peticiones.
+El mismo ejecutor puede invocarse manualmente mediante:
 
 ```bash
 npm run migrar
 ```
+
+En Dokploy, cada despliegue tras un push aplica sólo los archivos pendientes
+y conserva el historial de `migraciones_aplicadas`. Para un cambio de esquema,
+añade una migración numerada nueva y publícala junto al código. No edites las
+ya aplicadas. Si una migración falla, la API no inicia; los cambios DDL
+parciales pueden requerir reparación antes de reintentar.
+Consulta [el procedimiento de actualización automática](docs/despliegue_dokploy.md#actualización-automática-de-la-base-en-cada-despliegue).
 
 Las migraciones crean el control de versiones, el modelo de identidad y acceso,
 los roles iniciales y la configuración provisional de desarrollo. El diseño
