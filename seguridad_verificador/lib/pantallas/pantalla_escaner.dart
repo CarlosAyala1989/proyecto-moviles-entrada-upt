@@ -60,17 +60,30 @@ class PantallaEscaner extends StatelessWidget {
           color: Theme.of(context).colorScheme.primaryContainer,
           child: ListTile(
             leading: const Icon(Icons.door_front_door_outlined),
-            title: const Text('Punto de acceso configurado'),
+            title: const Text('Puerta asignada a este equipo'),
             subtitle: Text(controlador.puntoAccesoCodigo),
           ),
         ),
         const Padding(
           padding: EdgeInsets.fromLTRB(20, 14, 20, 10),
           child: Text(
-            'Centra el código QR dentro del recuadro. La validación comenzará automáticamente.',
+            'Escanea el código que aparece ahora en la pantalla del estudiante. Cambia cada 15 segundos.',
             textAlign: TextAlign.center,
           ),
         ),
+        if (controlador.usaUbicacionSimulada)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 10),
+            child: Card(
+              child: ListTile(
+                leading: Icon(Icons.science_outlined),
+                title: Text('Modo de prueba en Linux'),
+                subtitle: Text(
+                  'La ubicación de este equipo es simulada y no confirma que esté en la universidad.',
+                ),
+              ),
+            ),
+          ),
         Expanded(child: construir(_validar)),
       ],
     );
@@ -91,7 +104,7 @@ class _ValidandoIngreso extends StatelessWidget {
             CircularProgressIndicator(),
             SizedBox(height: 20),
             Text(
-              'Comprobando sesión, ubicación, punto y credencial…',
+              'Estamos comprobando el código, la identidad y la ubicación…',
               textAlign: TextAlign.center,
             ),
           ],
@@ -131,7 +144,7 @@ class _ResultadoIngreso extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          autorizado ? 'INGRESO AUTORIZADO' : 'INGRESO DENEGADO',
+          autorizado ? 'INGRESO PERMITIDO' : 'INGRESO NO PERMITIDO',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: color,
             fontWeight: FontWeight.bold,
@@ -140,7 +153,7 @@ class _ResultadoIngreso extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          resultado.mensaje,
+          mensajeDecisionIngresoParaUsuario(resultado.motivo),
           style: Theme.of(context).textTheme.titleMedium,
           textAlign: TextAlign.center,
         ),
@@ -162,7 +175,7 @@ class _ResultadoIngreso extends StatelessWidget {
             color: Theme.of(context).colorScheme.errorContainer,
             child: ListTile(
               leading: const Icon(Icons.info_outline),
-              title: const Text('Motivo'),
+              title: const Text('Qué ocurrió'),
               subtitle: Text(_etiquetaMotivo(resultado.motivo)),
             ),
           ),
@@ -320,19 +333,5 @@ class _MensajeValidacion extends StatelessWidget {
 }
 
 String _etiquetaMotivo(String motivo) {
-  const etiquetas = {
-    'TOKEN_INVALIDO': 'Código QR no válido',
-    'INTEGRIDAD_CREDENCIAL_INVALIDA': 'Código alterado o incompleto',
-    'CREDENCIAL_EXPIRADA': 'Credencial vencida',
-    'CREDENCIAL_REVOCADA': 'Credencial anulada',
-    'CREDENCIAL_YA_UTILIZADA': 'Credencial ya utilizada',
-    'USUARIO_NO_HABILITADO': 'Usuario no habilitado',
-    'IDENTIDAD_NO_VERIFICADA': 'Identidad no verificada',
-    'ROL_PORTADOR_NO_HABILITADO': 'Rol no habilitado para ingresar',
-    'SESION_USUARIO_INVALIDA': 'Sesión del portador no válida',
-    'PUNTO_ACCESO_INACTIVO': 'Punto de acceso inactivo',
-    'PUNTO_ACCESO_NO_COINCIDE': 'Código emitido para otro punto',
-    'UBICACION_ESCANEO_FUERA_DE_ZONA': 'Escaneo fuera de la zona permitida',
-  };
-  return etiquetas[motivo] ?? motivo.replaceAll('_', ' ').toLowerCase();
+  return mensajeDecisionIngresoParaUsuario(motivo);
 }

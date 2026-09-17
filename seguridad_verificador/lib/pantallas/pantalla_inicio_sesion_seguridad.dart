@@ -31,10 +31,10 @@ class _EstadoPantallaInicioSesionSeguridad
   Future<void> _iniciarSesion() async {
     if (!_formulario.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    await widget.controladorSesion.iniciarSesion(
-      _identificador.text.trim(),
-      _contrasena.text,
-    );
+    final identificador = _identificador.text.trim();
+    final contrasena = _contrasena.text;
+    await widget.controladorSesion.iniciarSesion(identificador, contrasena);
+    if (!mounted) return;
     _contrasena.clear();
   }
 
@@ -78,8 +78,9 @@ class _EstadoPantallaInicioSesionSeguridad
                         labelText: 'Código o correo institucional',
                         prefixIcon: Icon(Icons.person_outline),
                       ),
-                      validator: (valor) => valor == null || valor.trim().isEmpty
-                          ? 'Ingresa tu identificador.'
+                      validator: (valor) =>
+                          valor == null || valor.trim().isEmpty
+                          ? 'Ingresa tu código o correo institucional.'
                           : null,
                     ),
                     const SizedBox(height: 16),
@@ -114,7 +115,9 @@ class _EstadoPantallaInicioSesionSeguridad
                         liveRegion: true,
                         child: Text(
                           mensajeError,
-                          style: TextStyle(color: Theme.of(context).colorScheme.error),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),

@@ -20,6 +20,12 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
     widget.controlador.cargarIdentidad();
   }
 
+  @override
+  void dispose() {
+    widget.controlador.detenerRotacionAutomatica();
+    super.dispose();
+  }
+
   Future<void> _revocar() async {
     final confirmado = await showDialog<bool>(
       context: context,
@@ -98,7 +104,7 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
         icono: Icons.warning_amber_rounded,
         mensaje: estado.mensaje!,
         etiquetaAccion: 'Intentar nuevamente',
-        alAccionar: widget.controlador.generarCodigoQr,
+        alAccionar: widget.controlador.iniciarRotacionAutomatica,
       );
     }
     if (estado.fase == FaseCarga.completada) {
@@ -107,24 +113,32 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
           icono: Icons.timer_off_outlined,
           mensaje: 'El código QR venció y ya no se muestra.',
           etiquetaAccion: 'Generar uno nuevo',
-          alAccionar: widget.controlador.generarCodigoQr,
+          alAccionar: widget.controlador.iniciarRotacionAutomatica,
         );
       }
       return _CodigoQrVigente(
         codigo: estado.datos!,
         segundosRestantes: widget.controlador.segundosRestantes,
         mensajeError: widget.controlador.mensajeCodigoQr,
+        ubicacionSimulada: widget.controlador.usaUbicacionSimulada,
         alRevocar: _revocar,
       );
     }
-    return _SolicitudCodigoQr(alGenerar: widget.controlador.generarCodigoQr);
+    return _SolicitudCodigoQr(
+      alGenerar: widget.controlador.iniciarRotacionAutomatica,
+      ubicacionSimulada: widget.controlador.usaUbicacionSimulada,
+    );
   }
 }
 
 class _SolicitudCodigoQr extends StatelessWidget {
-  const _SolicitudCodigoQr({required this.alGenerar});
+  const _SolicitudCodigoQr({
+    required this.alGenerar,
+    required this.ubicacionSimulada,
+  });
 
   final VoidCallback alGenerar;
+  final bool ubicacionSimulada;
 
   @override
   Widget build(BuildContext context) {
@@ -143,20 +157,32 @@ class _SolicitudCodigoQr extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Credencial temporal de ingreso',
+                'Código temporal de ingreso',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               const Text(
-                'Al continuar, la aplicación solicitará tu ubicación actual. El backend comprobará el punto de acceso antes de emitir el código.',
+                'Al continuar, usaremos tu ubicación para comprobar que estás cerca de una puerta habilitada.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               const Text(
-                'El código será de un solo uso y vencerá automáticamente.',
+                'El código será de un solo uso y se renovará automáticamente cada 15 segundos mientras permanezcas en esta pantalla.',
                 textAlign: TextAlign.center,
               ),
+              if (ubicacionSimulada) ...[
+                const SizedBox(height: 12),
+                const Card(
+                  child: ListTile(
+                    leading: Icon(Icons.science_outlined),
+                    title: Text('Modo de prueba en Linux'),
+                    subtitle: Text(
+                      'La ubicación mostrada es de prueba y no confirma que estés en la universidad.',
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: alGenerar,
@@ -173,7 +199,7 @@ class _SolicitudCodigoQr extends StatelessWidget {
 
 class _GenerandoCodigoQr extends StatelessWidget {
   const _GenerandoCodigoQr({
-    this.mensaje = 'Comprobando sesión, ubicación y autorización…',
+    this.mensaje = 'Estamos comprobando tu ubicación y permiso de ingreso…',
   });
 
   final String mensaje;
@@ -201,12 +227,14 @@ class _CodigoQrVigente extends StatelessWidget {
     required this.codigo,
     required this.segundosRestantes,
     required this.mensajeError,
+    required this.ubicacionSimulada,
     required this.alRevocar,
   });
 
   final CodigoQrTemporal codigo;
   final int segundosRestantes;
   final String? mensajeError;
+  final bool ubicacionSimulada;
   final VoidCallback alRevocar;
 
   @override
@@ -281,9 +309,21 @@ class _CodigoQrVigente extends StatelessWidget {
             subtitle: Text('Punto ${codigo.puntoAccesoCodigo}'),
           ),
         ),
+        if (ubicacionSimulada) ...[
+          const SizedBox(height: 12),
+          const Card(
+            child: ListTile(
+              leading: Icon(Icons.science_outlined),
+              title: Text('Modo de prueba en Linux'),
+              subtitle: Text(
+                'Esta ubicación es simulada y sólo sirve para probar la aplicación.',
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         const Text(
-          'No compartas capturas. El backend decidirá el ingreso y consumirá el código al validarlo.',
+          'No compartas capturas. Al escanearlo comprobaremos tu identidad, la puerta y las ubicaciones. Cada código sirve una sola vez.',
           textAlign: TextAlign.center,
         ),
         if (mensajeError != null) ...[

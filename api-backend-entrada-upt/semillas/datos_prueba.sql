@@ -1,6 +1,7 @@
 INSERT INTO usuarios (
   codigo_institucional,
   correo_institucional,
+  contrasena_hash,
   nombres,
   apellidos,
   estado,
@@ -8,9 +9,20 @@ INSERT INTO usuarios (
   identidad_verificada,
   identidad_verificada_en
 ) VALUES
-  ('PRUEBA-EST-001', 'estudiante.prueba@example.invalid', 'Estudiante', 'De Prueba', 'ACTIVO', 'AUTORIZADO', TRUE, CURRENT_TIMESTAMP(3)),
-  ('PRUEBA-SEG-001', 'seguridad.prueba@example.invalid', 'Seguridad', 'De Prueba', 'ACTIVO', 'AUTORIZADO', TRUE, CURRENT_TIMESTAMP(3))
+  (
+    'PRUEBA-EST-001',
+    'estudiante.prueba@example.invalid',
+    '$2b$12$5f4f1Gzv2Dm0xB0o14BvpeBmxXngv//8XiCkGj.sitlAKFveR/q3S',
+    'Estudiante', 'De Prueba', 'ACTIVO', 'AUTORIZADO', TRUE, CURRENT_TIMESTAMP(3)
+  ),
+  (
+    'PRUEBA-SEG-001',
+    'seguridad.prueba@example.invalid',
+    '$2b$12$5f4f1Gzv2Dm0xB0o14BvpeBmxXngv//8XiCkGj.sitlAKFveR/q3S',
+    'Seguridad', 'De Prueba', 'ACTIVO', 'AUTORIZADO', TRUE, CURRENT_TIMESTAMP(3)
+  )
 ON DUPLICATE KEY UPDATE
+  contrasena_hash = VALUES(contrasena_hash),
   nombres = VALUES(nombres),
   apellidos = VALUES(apellidos),
   estado = VALUES(estado),
@@ -64,9 +76,9 @@ INSERT INTO puntos_acceso (
 ) VALUES (
   'PRUEBA-LOCAL',
   'Punto de acceso de prueba',
-  'Coordenadas ficticias exclusivas para pruebas automatizadas.',
-  0,
-  0,
+  'Coordenadas simuladas exclusivas para el desarrollo local.',
+  -18.013,
+  -70.251,
   150,
   'ACTIVO'
 )

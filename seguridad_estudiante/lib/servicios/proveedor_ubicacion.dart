@@ -7,6 +7,25 @@ abstract interface class ProveedorUbicacion {
   Future<UbicacionReportada> obtenerUbicacionActual();
 }
 
+abstract final class ConfiguracionUbicacionDesarrollo {
+  static const simulada = bool.fromEnvironment(
+    'UBICACION_DESARROLLO_SIMULADA',
+    defaultValue: false,
+  );
+  static const latitudTexto = String.fromEnvironment(
+    'UBICACION_DESARROLLO_LATITUD',
+    defaultValue: '-18.013',
+  );
+  static const longitudTexto = String.fromEnvironment(
+    'UBICACION_DESARROLLO_LONGITUD',
+    defaultValue: '-70.251',
+  );
+  static const precisionMetrosTexto = String.fromEnvironment(
+    'UBICACION_DESARROLLO_PRECISION_METROS',
+    defaultValue: '5',
+  );
+}
+
 class ExcepcionUbicacion implements Exception {
   const ExcepcionUbicacion(this.mensaje);
 
@@ -67,6 +86,52 @@ class ProveedorUbicacionDispositivo implements ProveedorUbicacion {
       throw const ExcepcionUbicacion(
         'El sistema no permitió acceder a la ubicación del dispositivo.',
       );
+    } catch (_) {
+      throw const ExcepcionUbicacion(
+        'No fue posible obtener la ubicación. Comprueba que el servicio de ubicación esté disponible.',
+      );
     }
+  }
+}
+
+/// Ubicación explícita para probar la interfaz Linux desde fuera de la puerta.
+///
+/// `main.dart` sólo permite construir este proveedor en modo debug sobre Linux.
+/// Android y toda compilación release siempre usan la ubicación del dispositivo.
+class ProveedorUbicacionSimuladaDesarrollo implements ProveedorUbicacion {
+  const ProveedorUbicacionSimuladaDesarrollo();
+
+  @override
+  Future<UbicacionReportada> obtenerUbicacionActual() async {
+    final latitud = double.tryParse(
+      ConfiguracionUbicacionDesarrollo.latitudTexto,
+    );
+    final longitud = double.tryParse(
+      ConfiguracionUbicacionDesarrollo.longitudTexto,
+    );
+    final precision = double.tryParse(
+      ConfiguracionUbicacionDesarrollo.precisionMetrosTexto,
+    );
+    if (latitud == null || longitud == null || precision == null) {
+      throw const ExcepcionUbicacion(
+        'Las coordenadas simuladas de desarrollo deben ser números.',
+      );
+    }
+    if (latitud < -90 || latitud > 90 || longitud < -180 || longitud > 180) {
+      throw const ExcepcionUbicacion(
+        'Las coordenadas simuladas de desarrollo no son válidas.',
+      );
+    }
+    if (precision <= 0) {
+      throw const ExcepcionUbicacion(
+        'La precisión simulada de desarrollo debe ser mayor que cero.',
+      );
+    }
+    return UbicacionReportada(
+      latitud: latitud,
+      longitud: longitud,
+      precisionMetros: precision,
+      obtenidaEn: DateTime.now().toUtc(),
+    );
   }
 }

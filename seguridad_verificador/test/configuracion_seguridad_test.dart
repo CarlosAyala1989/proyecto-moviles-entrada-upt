@@ -26,7 +26,7 @@ void main() {
           valor: 'PRUEBA-LOCAL',
           exigirPuntoInstitucional: true,
         ),
-        contains('institucional'),
+        contains('puerta de la universidad'),
       );
     });
 

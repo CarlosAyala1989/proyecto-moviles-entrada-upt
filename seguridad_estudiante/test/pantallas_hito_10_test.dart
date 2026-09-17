@@ -45,7 +45,7 @@ void main() {
     expect(find.text('María Elena Pérez Quispe'), findsOneWidget);
     expect(find.text('PRUEBA-EST-001'), findsOneWidget);
     expect(find.text('Ingeniería de Sistemas'), findsOneWidget);
-    expect(find.text('Identidad: VERIFICADA'), findsOneWidget);
+    expect(find.text('Identidad: confirmada'), findsOneWidget);
     await probador.drag(find.byType(ListView), const Offset(0, -500));
     await probador.pumpAndSettle();
     expect(find.text('Solicitar código QR'), findsOneWidget);
@@ -68,7 +68,7 @@ void main() {
     await probador.pumpAndSettle();
 
     expect(find.byType(QrImageView), findsOneWidget);
-    expect(find.text('45 s'), findsOneWidget);
+    expect(find.text('15 s'), findsOneWidget);
     expect(find.text('Puerta principal'), findsOneWidget);
     await probador.drag(find.byType(ListView), const Offset(0, -500));
     await probador.pumpAndSettle();

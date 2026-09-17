@@ -15,9 +15,7 @@ class ControladorIdentidadQr extends ChangeNotifier {
        _controladorSesion = controladorSesion,
        _proveedorUbicacion = proveedorUbicacion,
        _ahora = ahora ?? DateTime.now,
-       _idUsuarioSesion = controladorSesion.estaAutenticada
-           ? controladorSesion.sesion?.usuario.id
-           : null {
+       _revisionSesion = controladorSesion.revisionAutenticacion {
     _controladorSesion.addListener(_alCambiarSesion);
   }
 
@@ -28,9 +26,12 @@ class ControladorIdentidadQr extends ChangeNotifier {
 
   EstadoCarga<IdentidadDigital> _identidad = const EstadoCarga.inicial();
   EstadoCarga<CodigoQrTemporal> _codigoQr = const EstadoCarga.inicial();
-  int? _idUsuarioSesion;
+  int _revisionSesion;
   int _segundosRestantes = 0;
   bool _revocando = false;
+  bool _rotacionAutomatica = false;
+  bool _rotacionEnCurso = false;
+  bool _descartado = false;
   String? _mensajeCodigoQr;
   Timer? _temporizador;
 
@@ -38,6 +39,9 @@ class ControladorIdentidadQr extends ChangeNotifier {
   EstadoCarga<CodigoQrTemporal> get codigoQr => _codigoQr;
   int get segundosRestantes => _segundosRestantes;
   bool get revocando => _revocando;
+  bool get rotacionAutomatica => _rotacionAutomatica;
+  bool get usaUbicacionSimulada =>
+      _proveedorUbicacion is ProveedorUbicacionSimuladaDesarrollo;
   String? get mensajeCodigoQr => _mensajeCodigoQr;
   bool get codigoQrVigente =>
       _codigoQr.fase == FaseCarga.completada && _segundosRestantes > 0;
@@ -46,17 +50,22 @@ class ControladorIdentidadQr extends ChangeNotifier {
     if (!forzar && _identidad.fase == FaseCarga.completada) return true;
     if (_identidad.fase == FaseCarga.cargando) return false;
 
+    final revision = _controladorSesion.revisionAutenticacion;
     _identidad = const EstadoCarga.cargando();
     notifyListeners();
     try {
       final token = await _controladorSesion.obtenerTokenAcceso();
+      if (!_solicitudVigente(revision)) return false;
       final resultado = await _clienteApi.consultarIdentidadDigital(token);
+      if (!_solicitudVigente(revision)) return false;
       _identidad = EstadoCarga.completada(resultado);
       notifyListeners();
       return true;
     } on ExcepcionApi catch (error) {
-      _identidad = EstadoCarga.error(error.mensaje);
+      if (!_solicitudVigente(revision)) return false;
+      _identidad = EstadoCarga.error(error.mensajeParaUsuario);
     } catch (_) {
+      if (!_solicitudVigente(revision)) return false;
       _identidad = const EstadoCarga.error(
         'No fue posible consultar la identidad digital.',
       );
@@ -65,10 +74,30 @@ class ControladorIdentidadQr extends ChangeNotifier {
     return false;
   }
 
-  Future<bool> generarCodigoQr() async {
-    if (_codigoQr.fase == FaseCarga.cargando) return false;
+  Future<bool> iniciarRotacionAutomatica() async {
+    _rotacionAutomatica = true;
+    final generado = await generarCodigoQr(mantenerRotacion: true);
+    if (!generado && !_descartado) {
+      _rotacionAutomatica = false;
+      notifyListeners();
+    }
+    return generado;
+  }
 
+  void detenerRotacionAutomatica() {
+    _rotacionAutomatica = false;
+    _cancelarTemporizador();
+    _codigoQr = const EstadoCarga.inicial();
+    _segundosRestantes = 0;
+  }
+
+  Future<bool> generarCodigoQr({bool mantenerRotacion = false}) async {
+    if (_codigoQr.fase == FaseCarga.cargando) return false;
+    if (!mantenerRotacion) _rotacionAutomatica = false;
+
+    final revision = _controladorSesion.revisionAutenticacion;
     final identidadDisponible = await cargarIdentidad();
+    if (!_solicitudVigente(revision)) return false;
     final perfil = _identidad.datos;
     if (!identidadDisponible || perfil == null) return false;
     if (!perfil.puedeSolicitarCodigoQr) {
@@ -86,8 +115,11 @@ class ControladorIdentidadQr extends ChangeNotifier {
     notifyListeners();
     try {
       final token = await _controladorSesion.obtenerTokenAcceso();
+      if (!_solicitudVigente(revision)) return false;
       final ubicacion = await _proveedorUbicacion.obtenerUbicacionActual();
+      if (!_solicitudVigente(revision)) return false;
       final resultado = await _clienteApi.generarCodigoQr(token, ubicacion);
+      if (!_solicitudVigente(revision)) return false;
       _codigoQr = EstadoCarga.completada(resultado);
       _actualizarCuentaRegresiva();
       if (_segundosRestantes > 0) {
@@ -98,10 +130,13 @@ class ControladorIdentidadQr extends ChangeNotifier {
       }
       return _segundosRestantes > 0;
     } on ExcepcionUbicacion catch (error) {
+      if (!_solicitudVigente(revision)) return false;
       _codigoQr = EstadoCarga.error(error.mensaje);
     } on ExcepcionApi catch (error) {
-      _codigoQr = EstadoCarga.error(error.mensaje);
+      if (!_solicitudVigente(revision)) return false;
+      _codigoQr = EstadoCarga.error(error.mensajeParaUsuario);
     } catch (_) {
+      if (!_solicitudVigente(revision)) return false;
       _codigoQr = const EstadoCarga.error(
         'No fue posible generar el código QR.',
       );
@@ -112,19 +147,25 @@ class ControladorIdentidadQr extends ChangeNotifier {
 
   Future<bool> revocarCodigoQr() async {
     if (!codigoQrVigente || _revocando) return !_revocando;
+    _rotacionAutomatica = false;
+    final revision = _controladorSesion.revisionAutenticacion;
     _revocando = true;
     _mensajeCodigoQr = null;
     notifyListeners();
     try {
       final token = await _controladorSesion.obtenerTokenAcceso();
+      if (!_solicitudVigente(revision)) return false;
       await _clienteApi.revocarCodigoQr(token);
+      if (!_solicitudVigente(revision)) return false;
       _limpiarCodigoQr();
       _revocando = false;
       notifyListeners();
       return true;
     } on ExcepcionApi catch (error) {
-      _mensajeCodigoQr = error.mensaje;
+      if (!_solicitudVigente(revision)) return false;
+      _mensajeCodigoQr = error.mensajeParaUsuario;
     } catch (_) {
+      if (!_solicitudVigente(revision)) return false;
       _mensajeCodigoQr = 'No fue posible anular el código QR.';
     }
     _revocando = false;
@@ -144,26 +185,45 @@ class ControladorIdentidadQr extends ChangeNotifier {
     _segundosRestantes = milisegundos <= 0
         ? 0
         : (milisegundos / Duration.millisecondsPerSecond).ceil();
-    if (_segundosRestantes == 0) _cancelarTemporizador();
+    if (_segundosRestantes == 0) {
+      _cancelarTemporizador();
+      if (_rotacionAutomatica && !_rotacionEnCurso) {
+        unawaited(_rotarCodigoQr());
+      }
+    }
     notifyListeners();
   }
 
+  Future<void> _rotarCodigoQr() async {
+    if (_descartado || !_rotacionAutomatica || _rotacionEnCurso) return;
+    _rotacionEnCurso = true;
+    final generado = await generarCodigoQr(mantenerRotacion: true);
+    _rotacionEnCurso = false;
+    if (!generado) _rotacionAutomatica = false;
+    if (!_descartado) notifyListeners();
+  }
+
   void _alCambiarSesion() {
-    final nuevoId = _controladorSesion.estaAutenticada
-        ? _controladorSesion.sesion?.usuario.id
-        : null;
-    if (nuevoId == _idUsuarioSesion) return;
-    _idUsuarioSesion = nuevoId;
+    final nuevaRevision = _controladorSesion.revisionAutenticacion;
+    if (nuevaRevision == _revisionSesion) return;
+    _revisionSesion = nuevaRevision;
     _identidad = const EstadoCarga.inicial();
     _limpiarCodigoQr();
     notifyListeners();
   }
+
+  bool _solicitudVigente(int revision) =>
+      !_descartado &&
+      revision == _controladorSesion.revisionAutenticacion &&
+      _controladorSesion.estaAutenticada;
 
   void _limpiarCodigoQr() {
     _cancelarTemporizador();
     _codigoQr = const EstadoCarga.inicial();
     _segundosRestantes = 0;
     _revocando = false;
+    _rotacionAutomatica = false;
+    _rotacionEnCurso = false;
     _mensajeCodigoQr = null;
   }
 
@@ -174,6 +234,8 @@ class ControladorIdentidadQr extends ChangeNotifier {
 
   @override
   void dispose() {
+    _descartado = true;
+    _revisionSesion += 1;
     _controladorSesion.removeListener(_alCambiarSesion);
     _cancelarTemporizador();
     super.dispose();

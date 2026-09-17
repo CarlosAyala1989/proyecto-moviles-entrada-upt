@@ -193,6 +193,7 @@ export class RepositorioAutenticacionMariaDb {
     duracionTokenRenovacionDias,
     direccionIp,
     agenteUsuario,
+    motivoInicio = 'INICIO_SESION_CORRECTO',
   }) {
     const conexion = await grupoConexiones.getConnection();
     try {
@@ -237,7 +238,7 @@ export class RepositorioAutenticacionMariaDb {
         usuarioId: usuario.id,
         identificadorHash,
         exitoso: true,
-        motivo: 'INICIO_SESION_CORRECTO',
+        motivo: motivoInicio,
         direccionIp,
         agenteUsuario,
       });

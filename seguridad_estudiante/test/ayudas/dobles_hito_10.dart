@@ -31,6 +31,26 @@ class ClientePortadorFalso implements ContratoClienteApi {
   final SesionUsuario sesion = crearSesionPortador();
 
   @override
+  Future<CaptchaIntranet> obtenerCaptchaIntranet() =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<PerfilIntranet> verificarIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
+  }) => throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<InicioGoogleOauth> iniciarGoogle(String verificacionIntranetId) =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<EstadoGoogleOauth> consultarEstadoGoogle(String transaccionId) =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
   Future<void> cerrarSesion(String tokenAcceso) async {}
 
   @override
@@ -107,7 +127,7 @@ UsuarioSesion crearUsuarioPortador() => const UsuarioSesion(
 );
 
 SesionUsuario crearSesionPortador() {
-  final ahora = DateTime.utc(2026, 9, 12, 15);
+  final ahora = DateTime.now().toUtc();
   return SesionUsuario(
     tokenAcceso: 'token-acceso-prueba',
     tokenRenovacion: 'token-renovacion-prueba',
@@ -148,8 +168,8 @@ CodigoQrTemporal crearCodigoQr(DateTime ahora) => CodigoQrTemporal(
   codigoQr: 'upt_qr_v1.credencial-opaca-de-prueba',
   estado: 'PENDIENTE',
   emitidaEn: ahora,
-  expiraEn: ahora.add(const Duration(seconds: 45)),
-  duracionSegundos: 45,
+  expiraEn: ahora.add(const Duration(seconds: 15)),
+  duracionSegundos: 15,
   unSoloUso: true,
   puntoAccesoCodigo: 'PRUEBA-LOCAL',
   puntoAccesoNombre: 'Puerta principal',

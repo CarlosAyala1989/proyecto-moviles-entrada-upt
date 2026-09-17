@@ -43,6 +43,12 @@ verificar_flutter "paquetes/cliente_api_upt" "cliente_api_upt"
 verificar_flutter "seguridad_estudiante" "seguridad_estudiante"
 verificar_flutter "seguridad_verificador" "seguridad_verificador"
 
+echo "Verificando flujo HTTP completo y cliente Dart contra MariaDB"
+(
+  cd "$RAIZ_PROYECTO/api-backend-entrada-upt"
+  npm run test:flujo-completo
+)
+
 if "$CONSTRUIR_APK"; then
   echo "Construyendo APK de seguridad_estudiante"
   (

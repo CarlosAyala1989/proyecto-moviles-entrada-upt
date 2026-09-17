@@ -90,19 +90,19 @@ class _ContenidoIdentidad extends StatelessWidget {
               _EstadoPerfil(
                 icono: Icons.verified_user_outlined,
                 etiqueta: 'Identidad',
-                valor: identidad.estadoVerificacion,
+                valor: _estadoLegible(identidad.estadoVerificacion),
                 favorable: identidad.estadoVerificacion == 'VERIFICADA',
               ),
               _EstadoPerfil(
                 icono: Icons.person_outline,
-                etiqueta: 'Usuario',
-                valor: identidad.estadoUsuario,
+                etiqueta: 'Cuenta',
+                valor: _estadoLegible(identidad.estadoUsuario),
                 favorable: identidad.estadoUsuario == 'ACTIVO',
               ),
               _EstadoPerfil(
                 icono: Icons.door_front_door_outlined,
-                etiqueta: 'Acceso',
-                valor: identidad.estadoAutorizacion,
+                etiqueta: 'Ingreso',
+                valor: _estadoLegible(identidad.estadoAutorizacion),
                 favorable: identidad.estadoAutorizacion == 'AUTORIZADO',
               ),
             ],
@@ -265,12 +265,24 @@ class _AvisoNoHabilitado extends StatelessWidget {
           leading: Icon(Icons.block_outlined),
           title: Text('Código QR no disponible'),
           subtitle: Text(
-            'Tu identidad debe estar verificada, activa y autorizada.',
+            'Todavía no podemos confirmar tu permiso de ingreso. Pide ayuda a la universidad.',
           ),
         ),
       ),
     );
   }
+}
+
+String _estadoLegible(String estado) {
+  const estados = {
+    'VERIFICADA': 'confirmada',
+    'PENDIENTE': 'por confirmar',
+    'ACTIVO': 'activa',
+    'INACTIVO': 'inactiva',
+    'AUTORIZADO': 'permitido',
+    'NO_AUTORIZADO': 'no permitido',
+  };
+  return estados[estado] ?? estado.toLowerCase().replaceAll('_', ' ');
 }
 
 class _EstadoErrorIdentidad extends StatelessWidget {

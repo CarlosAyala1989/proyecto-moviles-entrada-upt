@@ -24,9 +24,11 @@ la única autoridad que permite o deniega un ingreso.
 ## Configuración del backend
 
 La URL se inyecta con `URL_API_UPT`. El valor de desarrollo predeterminado es
-`http://10.0.2.2:3000/api`, el alias del equipo anfitrión en Android. Para un
-dispositivo físico se deberá usar una dirección local alcanzable y, en un
-entorno real, HTTPS.
+`http://127.0.0.1:3000/api`, por lo que en Linux, con la API iniciada en el
+puerto 3000, se ejecuta directamente con `flutter run -d Linux`. Un emulador
+Android debe sobrescribirla con `http://10.0.2.2:3000/api`; para un dispositivo
+físico se deberá usar una dirección local alcanzable y, en un entorno real,
+HTTPS.
 
 El código del punto de acceso se fija en compilación. `PRUEBA-LOCAL` sirve
 únicamente para el entorno local:
@@ -49,3 +51,36 @@ flutter run \
 La aplicación solicita cámara y ubicación solamente durante el uso. La
 verificación local se ejecuta con `flutter analyze`, `flutter test` y
 `flutter build apk --debug`.
+
+## Funciones del dispositivo en Linux
+
+La ubicación usa `geolocator_linux` y GeoClue. Instala el servicio en
+distribuciones Debian/Ubuntu:
+
+```bash
+sudo apt install geoclue-2.0
+```
+
+El escáner Linux abre la cámara mediante `zbarcam`; instala su proveedor antes
+de usar la pantalla de escaneo:
+
+```bash
+sudo apt install zbar-tools
+```
+
+El usuario debe tener acceso al dispositivo de vídeo (habitualmente el grupo
+`video`) y haber habilitado ubicación en el sistema. En Android, la cámara y
+la ubicación se solicitan con los permisos declarados en
+`android/app/src/main/AndroidManifest.xml`; iOS usa los textos de permiso de
+`ios/Runner/Info.plist`.
+
+Para probar en Linux el emisor y el verificador desde fuera de la universidad,
+inicia este verificador con:
+
+```bash
+../scripts/ejecutar_verificador_linux_qr.sh
+```
+
+La pantalla avisa claramente que la ubicación es simulada. Este modo sólo se
+activa en Linux debug; Android y las versiones de entrega siempre usan la
+ubicación real del dispositivo.

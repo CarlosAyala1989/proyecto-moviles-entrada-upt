@@ -169,7 +169,7 @@ describe('Generación de códigos QR temporales', { concurrency: false }, () => 
       /^upt_qr_v1\.[A-Za-z0-9_-]{43}\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{22}$/,
     );
     assert.equal(credencial.estado, 'PENDIENTE');
-    assert.equal(credencial.duracion_segundos, 45);
+    assert.equal(credencial.duracion_segundos, 15);
     assert.equal(credencial.un_solo_uso, true);
     assert.equal(credencial.ubicacion.punto_acceso.codigo, codigoPunto);
     assert.equal(credencial.ubicacion.resultado, 'DENTRO_DE_ZONA_CONFIGURADA');

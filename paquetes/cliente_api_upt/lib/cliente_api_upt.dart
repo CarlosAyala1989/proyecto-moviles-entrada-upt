@@ -1,6 +1,10 @@
 export 'configuracion/configuracion_api.dart';
+export 'modelos/captcha_intranet.dart';
 export 'modelos/codigo_qr_temporal.dart';
+export 'modelos/estado_google_oauth.dart';
 export 'modelos/identidad_digital.dart';
+export 'modelos/inicio_google_oauth.dart';
+export 'modelos/perfil_intranet.dart';
 export 'modelos/registro_ingreso_reciente.dart';
 export 'modelos/resultado_validacion_ingreso.dart';
 export 'modelos/sesion_usuario.dart';
@@ -13,4 +17,5 @@ export 'sesion/almacen_sesion.dart';
 export 'sesion/almacen_sesion_segura.dart';
 export 'sesion/controlador_sesion.dart';
 export 'utilidades/estado_carga.dart';
+export 'utilidades/mensajes_usuario.dart';
 export 'widgets/pantalla_configuracion_invalida.dart';

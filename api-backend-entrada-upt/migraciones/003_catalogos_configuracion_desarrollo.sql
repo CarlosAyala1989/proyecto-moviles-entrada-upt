@@ -7,7 +7,7 @@ INSERT INTO roles (nombre, descripcion) VALUES
 ON DUPLICATE KEY UPDATE descripcion = VALUES(descripcion), activo = TRUE;
 
 INSERT INTO configuraciones_sistema (clave, valor, tipo, descripcion) VALUES
-  ('DURACION_QR_SEGUNDOS', '45', 'ENTERO', 'Valor provisional de desarrollo; no constituye una regla oficial de la UPT.'),
+  ('DURACION_QR_SEGUNDOS', '15', 'ENTERO', 'Valor provisional de desarrollo; no constituye una regla oficial de la UPT.'),
   ('RADIO_UBICACION_METROS', '150', 'DECIMAL', 'Valor provisional de desarrollo; la ubicación informada por el cliente no prueba presencia física.'),
   ('DURACION_SESION_MINUTOS', '480', 'ENTERO', 'Duración provisional para sesiones locales de desarrollo.'),
   ('MAX_INTENTOS_INICIO_SESION', '5', 'ENTERO', 'Cantidad provisional de intentos fallidos antes de aplicar bloqueo temporal.'),

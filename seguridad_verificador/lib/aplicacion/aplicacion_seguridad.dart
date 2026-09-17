@@ -22,38 +22,37 @@ class AplicacionSeguridad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Control de Acceso UPT',
-      debugShowCheckedModeBanner: false,
-      theme: construirTemaSeguridad(),
-      routes: {
-        RutasSeguridad.escaner: (_) =>
-            PantallaEscaner(controlador: controladorValidacion),
-        RutasSeguridad.historial: (_) =>
-            PantallaHistorial(controlador: controladorValidacion),
-      },
-      home: AnimatedBuilder(
-        animation: controladorSesion,
-        builder: (context, _) {
-          if (controladorSesion.estado == EstadoSesion.restaurando ||
-              controladorSesion.estado == EstadoSesion.cerrando) {
-            return const PantallaPreparacionSeguridad(
-              titulo: 'Control de Acceso UPT',
-              descripcion: 'Preparando una sesión segura…',
-              icono: Icons.security,
-              mostrarProgreso: true,
-            );
-          }
-          if (controladorSesion.estaAutenticada) {
-            return PantallaInicioSeguridad(
-              controladorSesion: controladorSesion,
-            );
-          }
-          return PantallaInicioSesionSeguridad(
-            controladorSesion: controladorSesion,
-          );
+    return AnimatedBuilder(
+      animation: controladorSesion,
+      builder: (context, _) => MaterialApp(
+        key: ValueKey(controladorSesion.revisionAutenticacion),
+        title: 'Control de Acceso UPT',
+        debugShowCheckedModeBanner: false,
+        theme: construirTemaSeguridad(),
+        routes: {
+          RutasSeguridad.escaner: (_) =>
+              PantallaEscaner(controlador: controladorValidacion),
+          RutasSeguridad.historial: (_) =>
+              PantallaHistorial(controlador: controladorValidacion),
         },
+        home: _pantallaInicial(),
       ),
     );
+  }
+
+  Widget _pantallaInicial() {
+    if (controladorSesion.estado == EstadoSesion.restaurando ||
+        controladorSesion.estado == EstadoSesion.cerrando) {
+      return const PantallaPreparacionSeguridad(
+        titulo: 'Control de Acceso UPT',
+        descripcion: 'Preparando una sesión segura…',
+        icono: Icons.security,
+        mostrarProgreso: true,
+      );
+    }
+    if (controladorSesion.estaAutenticada) {
+      return PantallaInicioSeguridad(controladorSesion: controladorSesion);
+    }
+    return PantallaInicioSesionSeguridad(controladorSesion: controladorSesion);
   }
 }

@@ -113,7 +113,7 @@ Los valores locales provisionales son:
 
 | Configuración | Valor |
 | --- | ---: |
-| `DURACION_QR_SEGUNDOS` | 45 segundos |
+| `DURACION_QR_SEGUNDOS` | 15 segundos |
 | `ANTIGUEDAD_MAXIMA_UBICACION_SEGUNDOS` | 30 segundos |
 | `DESFASE_FUTURO_UBICACION_SEGUNDOS` | 10 segundos |
 | `PRECISION_MAXIMA_UBICACION_METROS` | 100 metros |

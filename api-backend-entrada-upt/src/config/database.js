@@ -8,6 +8,8 @@ export const grupoConexiones = mariadb.createPool({
   user: entorno.db.user,
   password: entorno.db.password,
   connectionLimit: entorno.db.connectionLimit,
+  // Lima no aplica horario de verano; el offset evita depender de tablas TZ SQL.
+  timezone: '-05:00',
   acquireTimeout: 10_000,
   insertIdAsNumber: true,
   bigIntAsNumber: true,

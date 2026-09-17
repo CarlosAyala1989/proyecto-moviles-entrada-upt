@@ -17,7 +17,7 @@ void main() {
           valor: 'http://10.0.2.2:3000/api',
           exigirHttps: true,
         ),
-        contains('HTTPS'),
+        contains('conexión protegida'),
       );
     });
 
@@ -44,7 +44,7 @@ void main() {
           valor: 'https://acceso.upt.example/v1',
           exigirHttps: true,
         ),
-        contains('/api'),
+        contains('servicio de la aplicación'),
       );
     });
   });
@@ -55,15 +55,15 @@ void main() {
     await probador.pumpWidget(
       const MaterialApp(
         home: PantallaConfiguracionInvalida(
-          titulo: 'Configuración no válida',
-          mensaje: 'Se requiere HTTPS.',
+          titulo: 'No pudimos iniciar la aplicación',
+          mensaje: 'Se requiere una conexión protegida.',
           icono: Icons.settings_suggest_outlined,
         ),
       ),
     );
 
-    expect(find.text('Configuración no válida'), findsOneWidget);
-    expect(find.text('Se requiere HTTPS.'), findsOneWidget);
-    expect(find.textContaining('No se intentó conectar'), findsOneWidget);
+    expect(find.text('No pudimos iniciar la aplicación'), findsOneWidget);
+    expect(find.text('Se requiere una conexión protegida.'), findsOneWidget);
+    expect(find.textContaining('Pide ayuda'), findsOneWidget);
   });
 }

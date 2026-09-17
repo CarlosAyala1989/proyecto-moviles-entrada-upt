@@ -13,6 +13,107 @@ http.Response respuestaJson(Object datos) => http.Response(
 
 void main() {
   group('Contrato HTTP móvil', () {
+    test(
+      'obtiene CAPTCHA y envía la verificación exclusivamente al backend',
+      () async {
+        final solicitudes = <http.Request>[];
+        final cliente = ClienteApi(
+          urlBase: 'https://acceso.example.invalid/api',
+          clienteHttp: MockClient((solicitud) async {
+            solicitudes.add(solicitud);
+            if (solicitud.method == 'GET') {
+              return respuestaJson({
+                'transaccion_id': '0664b410-145e-4ef3-8d98-1055d8d57ee9',
+                'imagen_base64': 'AQID',
+                'tipo_imagen': 'image/png',
+                'expira_en': '2026-09-14T12:05:00.000Z',
+              });
+            }
+            return respuestaJson({
+              'codigo': '2022074266',
+              'nombre_apellidos': 'AYALA RAMOS, CARLOS DANIEL',
+              'verificacion_intranet_id':
+                  '8bcdbcea-0682-4c77-a828-21855d6bcdfa',
+              'verificacion_expira_en': '2026-09-14T12:10:00.000Z',
+            });
+          }),
+        );
+
+        final captcha = await cliente.obtenerCaptchaIntranet();
+        final perfil = await cliente.verificarIntranet(
+          transaccionId: captcha.transaccionId,
+          codigo: '2022074266',
+          contrasena: '123456',
+          captcha: '3868',
+        );
+
+        expect(
+          solicitudes.first.url.path,
+          '/api/registro-estudiante/intranet/captcha',
+        );
+        expect(
+          solicitudes.last.url.path,
+          '/api/registro-estudiante/intranet/verificar',
+        );
+        final cuerpo = Map<String, dynamic>.from(
+          jsonDecode(solicitudes.last.body) as Map,
+        );
+        expect(cuerpo['contrasena'], '123456');
+        expect(cuerpo['captcha'], '3868');
+        expect(perfil.nombreApellidos, 'AYALA RAMOS, CARLOS DANIEL');
+      },
+    );
+
+    test('inicia Google OAuth y consulta la sesión final', () async {
+      final solicitudes = <http.Request>[];
+      final cliente = ClienteApi(
+        urlBase: 'https://acceso.example.invalid/api',
+        clienteHttp: MockClient((solicitud) async {
+          solicitudes.add(solicitud);
+          if (solicitud.method == 'POST') {
+            return respuestaJson({
+              'transaccion_id': 'b46b2f2d-89e2-437b-aa27-10cb3b8f493c',
+              'url_autorizacion':
+                  'https://accounts.google.com/o/oauth2/v2/auth',
+              'expira_en': '2026-09-14T12:10:00.000Z',
+            });
+          }
+          return respuestaJson({
+            'estado': 'COMPLETA',
+            'sesion': {
+              'token_acceso': 'upt_acceso_prueba',
+              'token_renovacion': 'upt_renovacion_prueba',
+              'token_acceso_expira_en': '2026-09-14T12:15:00.000Z',
+              'token_renovacion_expira_en': '2026-09-21T12:00:00.000Z',
+              'usuario': {
+                'id': 10,
+                'codigo_institucional': '2022074266',
+                'correo_institucional': 'ca2022074266@virtual.upt.pe',
+                'nombres': 'CARLOS DANIEL',
+                'apellidos': 'AYALA RAMOS',
+                'roles': ['ESTUDIANTE'],
+              },
+            },
+          });
+        }),
+      );
+
+      final inicio = await cliente.iniciarGoogle(
+        '8bcdbcea-0682-4c77-a828-21855d6bcdfa',
+      );
+      final estado = await cliente.consultarEstadoGoogle(inicio.transaccionId);
+
+      expect(solicitudes.first.method, 'POST');
+      expect(
+        solicitudes.first.url.path,
+        '/api/registro-estudiante/google/iniciar',
+      );
+      expect(solicitudes.last.url.path, contains('/google/estado/'));
+      expect(inicio.urlAutorizacion.host, 'accounts.google.com');
+      expect(estado.estaCompleta, isTrue);
+      expect(estado.sesion!.usuario.codigoInstitucional, '2022074266');
+    });
+
     test('consulta y decodifica la identidad autenticada', () async {
       late http.Request solicitudRecibida;
       final cliente = ClienteApi(

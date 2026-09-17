@@ -1,9 +1,47 @@
+import 'dart:async';
+
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seguridad_verificador/controladores/controlador_validacion_ingresos.dart';
 import 'package:seguridad_verificador/servicios/proveedor_ubicacion.dart';
 
 import 'ayudas/dobles_hito_11.dart';
+
+class ClienteHistorialPendiente extends ClienteSeguridadFalso {
+  ClienteHistorialPendiente()
+    : super(resultadoValidacion: crearResultadoAutorizado());
+
+  final respuesta = Completer<List<RegistroIngresoReciente>>();
+  final consultaIniciada = Completer<void>();
+
+  @override
+  Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
+    String tokenAcceso, {
+    int limite = 20,
+  }) {
+    consultaIniciada.complete();
+    return respuesta.future;
+  }
+}
+
+class ClienteValidacionPendiente extends ClienteSeguridadFalso {
+  ClienteValidacionPendiente()
+    : super(resultadoValidacion: crearResultadoAutorizado());
+
+  final respuesta = Completer<ResultadoValidacionIngreso>();
+  final validacionIniciada = Completer<void>();
+
+  @override
+  Future<ResultadoValidacionIngreso> validarIngreso({
+    required String tokenAcceso,
+    required String codigoQr,
+    required String puntoAccesoCodigo,
+    required UbicacionReportada ubicacion,
+  }) {
+    validacionIniciada.complete();
+    return respuesta.future;
+  }
+}
 
 void main() {
   Future<
@@ -99,7 +137,7 @@ void main() {
     expect(escenario.controlador.validacion.fase, FaseCarga.error);
     expect(
       escenario.controlador.validacion.mensaje,
-      contains('No permitas el acceso'),
+      contains('No permitas el ingreso'),
     );
   });
 
@@ -148,5 +186,58 @@ void main() {
     expect(cargado, isTrue);
     expect(escenario.cliente.consultasHistorial, 1);
     expect(escenario.controlador.historial.datos, hasLength(2));
+  });
+
+  test('descarta el historial recibido después de cerrar sesión', () async {
+    final cliente = ClienteHistorialPendiente();
+    final sesion = ControladorSesion(
+      clienteApi: cliente,
+      almacenSesion: AlmacenSesionFalso(),
+      rolesPermitidos: const {'SEGURIDAD'},
+    );
+    await sesion.iniciarSesion('PRUEBA-SEG-001', 'clave-de-prueba');
+    final controlador = ControladorValidacionIngresos(
+      clienteApi: cliente,
+      controladorSesion: sesion,
+      proveedorUbicacion: ProveedorUbicacionFalso(ubicacion: crearUbicacion()),
+      puntoAccesoCodigo: 'PRUEBA-LOCAL',
+    );
+    addTearDown(controlador.dispose);
+    addTearDown(sesion.dispose);
+
+    final consulta = controlador.cargarHistorial();
+    await cliente.consultaIniciada.future;
+    await sesion.cerrarSesion();
+    cliente.respuesta.complete(crearHistorial());
+
+    expect(await consulta, isFalse);
+    expect(controlador.historial.datos, isNull);
+  });
+
+  test('descarta una validación recibida después de cambiar sesión', () async {
+    final cliente = ClienteValidacionPendiente();
+    final sesion = ControladorSesion(
+      clienteApi: cliente,
+      almacenSesion: AlmacenSesionFalso(),
+      rolesPermitidos: const {'SEGURIDAD'},
+    );
+    await sesion.iniciarSesion('PRUEBA-SEG-001', 'clave-de-prueba');
+    final controlador = ControladorValidacionIngresos(
+      clienteApi: cliente,
+      controladorSesion: sesion,
+      proveedorUbicacion: ProveedorUbicacionFalso(ubicacion: crearUbicacion()),
+      puntoAccesoCodigo: 'PRUEBA-LOCAL',
+    );
+    addTearDown(controlador.dispose);
+    addTearDown(sesion.dispose);
+
+    final validacion = controlador.validarCodigoQr('codigo-pendiente');
+    await cliente.validacionIniciada.future;
+    await sesion.cerrarSesion();
+    await sesion.iniciarSesion('PRUEBA-SEG-001', 'clave-de-prueba');
+    cliente.respuesta.complete(crearResultadoAutorizado());
+
+    expect(await validacion, isFalse);
+    expect(controlador.validacion.datos, isNull);
   });
 }

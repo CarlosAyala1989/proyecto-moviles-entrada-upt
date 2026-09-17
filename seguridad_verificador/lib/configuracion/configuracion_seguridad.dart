@@ -10,10 +10,10 @@ abstract final class ConfiguracionSeguridad {
   }) {
     final normalizado = valor.trim().toUpperCase();
     if (!RegExp(r'^[A-Z0-9][A-Z0-9_-]{0,49}$').hasMatch(normalizado)) {
-      return 'PUNTO_ACCESO_CODIGO no contiene un código válido.';
+      return 'Este equipo no tiene una puerta asignada correctamente.';
     }
     if (exigirPuntoInstitucional && normalizado == 'PRUEBA-LOCAL') {
-      return 'Las compilaciones de producción requieren un punto de acceso institucional.';
+      return 'Antes de usar esta versión, asigna este equipo a una puerta de la universidad.';
     }
     return null;
   }

@@ -7,6 +7,25 @@ abstract interface class ProveedorUbicacion {
   Future<UbicacionReportada> obtenerUbicacionActual();
 }
 
+abstract final class ConfiguracionUbicacionDesarrollo {
+  static const simulada = bool.fromEnvironment(
+    'UBICACION_DESARROLLO_SIMULADA',
+    defaultValue: false,
+  );
+  static const latitudTexto = String.fromEnvironment(
+    'UBICACION_DESARROLLO_LATITUD',
+    defaultValue: '-18.013',
+  );
+  static const longitudTexto = String.fromEnvironment(
+    'UBICACION_DESARROLLO_LONGITUD',
+    defaultValue: '-70.251',
+  );
+  static const precisionMetrosTexto = String.fromEnvironment(
+    'UBICACION_DESARROLLO_PRECISION_METROS',
+    defaultValue: '5',
+  );
+}
+
 class ExcepcionUbicacion implements Exception {
   const ExcepcionUbicacion(this.mensaje);
 
@@ -61,12 +80,54 @@ class ProveedorUbicacionDispositivo implements ProveedorUbicacion {
       );
     } on LocationServiceDisabledException {
       throw const ExcepcionUbicacion(
-        'La ubicación se desactivó antes de completar la validación.',
+        'La ubicación se desactivó antes de comprobar el ingreso.',
       );
     } on PermissionDeniedException {
       throw const ExcepcionUbicacion(
         'El sistema no permitió acceder a la ubicación del dispositivo.',
       );
+    } catch (_) {
+      throw const ExcepcionUbicacion(
+        'No fue posible obtener la ubicación. Comprueba que el servicio de ubicación esté disponible.',
+      );
     }
+  }
+}
+
+class ProveedorUbicacionSimuladaDesarrollo implements ProveedorUbicacion {
+  const ProveedorUbicacionSimuladaDesarrollo();
+
+  @override
+  Future<UbicacionReportada> obtenerUbicacionActual() async {
+    final latitud = double.tryParse(
+      ConfiguracionUbicacionDesarrollo.latitudTexto,
+    );
+    final longitud = double.tryParse(
+      ConfiguracionUbicacionDesarrollo.longitudTexto,
+    );
+    final precision = double.tryParse(
+      ConfiguracionUbicacionDesarrollo.precisionMetrosTexto,
+    );
+    if (latitud == null || longitud == null || precision == null) {
+      throw const ExcepcionUbicacion(
+        'La ubicación de prueba no está escrita correctamente.',
+      );
+    }
+    if (latitud < -90 || latitud > 90 || longitud < -180 || longitud > 180) {
+      throw const ExcepcionUbicacion(
+        'La ubicación de prueba está fuera de los valores permitidos.',
+      );
+    }
+    if (precision <= 0) {
+      throw const ExcepcionUbicacion(
+        'La precisión de la ubicación de prueba no es válida.',
+      );
+    }
+    return UbicacionReportada(
+      latitud: latitud,
+      longitud: longitud,
+      precisionMetros: precision,
+      obtenidaEn: DateTime.now().toUtc(),
+    );
   }
 }

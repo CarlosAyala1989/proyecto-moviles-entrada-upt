@@ -9,6 +9,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "NODE_ENV=test node --test --test-concurrency=1",
+    "test:flujo-completo": "NODE_ENV=test node scripts/verificar_flujo_completo.js",
     "migrar": "node scripts/ejecutar_migraciones.js",
     "sembrar:pruebas": "node scripts/cargar_datos_prueba.js",
     "crear:administrador-inicial": "node scripts/crear_administrador_inicial.js",
@@ -22,9 +23,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
+    "google-auth-library": "^11.0.2",
     "helmet": "^8.1.0",
     "mariadb": "^3.4.5",
     "morgan": "^1.10.1",
+    "playwright-core": "^1.63.0",
     "zod": "^4.6.2"
   },
   "devDependencies": {

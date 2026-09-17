@@ -5,8 +5,12 @@ import 'package:http/http.dart' as http;
 
 import '../configuracion/configuracion_api.dart';
 import '../modelos/codigo_qr_temporal.dart';
+import '../modelos/captcha_intranet.dart';
+import '../modelos/estado_google_oauth.dart';
 import '../modelos/identidad_digital.dart';
+import '../modelos/inicio_google_oauth.dart';
 import '../modelos/registro_ingreso_reciente.dart';
+import '../modelos/perfil_intranet.dart';
 import '../modelos/resultado_validacion_ingreso.dart';
 import '../modelos/sesion_usuario.dart';
 import '../modelos/ubicacion_reportada.dart';
@@ -49,7 +53,9 @@ class ClienteApi implements ContratoClienteApi {
     String? tokenAcceso,
     Map<String, dynamic>? cuerpo,
     Map<String, String>? consulta,
+    Duration? tiempoEspera,
   }) async {
+    final limiteEspera = tiempoEspera ?? _tiempoEspera;
     try {
       final solicitud = http.Request(metodo, _construirUri(ruta, consulta));
       solicitud.headers.addAll(
@@ -58,10 +64,10 @@ class ClienteApi implements ContratoClienteApi {
       if (cuerpo != null) solicitud.body = jsonEncode(cuerpo);
       final transmitida = await _clienteHttp
           .send(solicitud)
-          .timeout(_tiempoEspera);
+          .timeout(limiteEspera);
       final respuesta = await http.Response.fromStream(
         transmitida,
-      ).timeout(_tiempoEspera);
+      ).timeout(limiteEspera);
       final contenido = utf8.decode(respuesta.bodyBytes);
       final json = contenido.isEmpty
           ? <String, dynamic>{}
@@ -76,7 +82,7 @@ class ClienteApi implements ContratoClienteApi {
           codigo: errorJson['codigo'] as String? ?? 'ERROR_API',
           mensaje:
               errorJson['mensaje'] as String? ??
-              'El servidor no pudo completar la solicitud.',
+              'No pudimos completar esta acción.',
           estadoHttp: respuesta.statusCode,
         );
       }
@@ -86,23 +92,73 @@ class ClienteApi implements ContratoClienteApi {
     } on TimeoutException {
       throw const ExcepcionApi(
         codigo: 'TIEMPO_ESPERA_AGOTADO',
-        mensaje: 'El servidor tardó demasiado en responder.',
+        mensaje: 'Esto está tardando más de lo esperado.',
       );
     } on http.ClientException {
       throw const ExcepcionApi(
         codigo: 'ERROR_CONEXION',
-        mensaje: 'No fue posible conectar con el servidor.',
+        mensaje: 'No pudimos comunicarnos con el servicio.',
       );
     } on FormatException {
       throw const ExcepcionApi(
         codigo: 'RESPUESTA_INVALIDA',
-        mensaje: 'El servidor devolvió una respuesta no válida.',
+        mensaje: 'Recibimos una respuesta inesperada.',
       );
     }
   }
 
   Map<String, dynamic> _datos(Map<String, dynamic> respuesta) {
     return Map<String, dynamic>.from(respuesta['datos'] as Map);
+  }
+
+  @override
+  Future<CaptchaIntranet> obtenerCaptchaIntranet() async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/registro-estudiante/intranet/captcha',
+      tiempoEspera: ConfiguracionApi.duracionMaximaCaptchaIntranet,
+    );
+    return CaptchaIntranet.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<PerfilIntranet> verificarIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
+  }) async {
+    final respuesta = await _solicitar(
+      metodo: 'POST',
+      ruta: '/registro-estudiante/intranet/verificar',
+      cuerpo: {
+        'transaccion_id': transaccionId,
+        'codigo': codigo,
+        'contrasena': contrasena,
+        'captcha': captcha,
+      },
+      tiempoEspera: ConfiguracionApi.duracionMaximaVerificacionIntranet,
+    );
+    return PerfilIntranet.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<InicioGoogleOauth> iniciarGoogle(String verificacionIntranetId) async {
+    final respuesta = await _solicitar(
+      metodo: 'POST',
+      ruta: '/registro-estudiante/google/iniciar',
+      cuerpo: {'verificacion_intranet_id': verificacionIntranetId},
+    );
+    return InicioGoogleOauth.desdeJson(_datos(respuesta));
+  }
+
+  @override
+  Future<EstadoGoogleOauth> consultarEstadoGoogle(String transaccionId) async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/registro-estudiante/google/estado/$transaccionId',
+    );
+    return EstadoGoogleOauth.desdeJson(_datos(respuesta));
   }
 
   @override

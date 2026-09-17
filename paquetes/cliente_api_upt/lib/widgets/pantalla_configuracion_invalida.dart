@@ -42,7 +42,7 @@ class PantallaConfiguracionInvalida extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'No se intentó conectar. Recompila la aplicación con una configuración válida.',
+                    'La aplicación necesita una corrección antes de continuar. Pide ayuda al responsable del sistema.',
                     textAlign: TextAlign.center,
                   ),
                 ],

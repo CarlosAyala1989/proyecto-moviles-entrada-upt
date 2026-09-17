@@ -5,6 +5,10 @@ RUN npm ci --omit=dev
 
 FROM node:22-alpine
 ENV NODE_ENV=production
+ENV TZ=America/Lima
+ENV CHROME_EXECUTABLE=/usr/bin/chromium-browser
+ENV CHROME_NO_SANDBOX=true
+RUN apk add --no-cache chromium tesseract-ocr tesseract-ocr-data-eng
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY package.json ./

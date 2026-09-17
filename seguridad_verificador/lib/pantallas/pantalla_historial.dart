@@ -66,7 +66,7 @@ class _ListaHistorial extends StatelessWidget {
             Icon(Icons.history, size: 64),
             SizedBox(height: 16),
             Text(
-              'Aún no registraste validaciones.',
+              'Todavía no comprobaste ningún ingreso.',
               textAlign: TextAlign.center,
             ),
           ],
@@ -85,7 +85,7 @@ class _ListaHistorial extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                'Últimos ${registros.length} intentos procesados por tu cuenta',
+                'Últimos ${registros.length} ingresos comprobados',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             );
@@ -125,7 +125,7 @@ class _RegistroHistorial extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    autorizado ? 'AUTORIZADO' : 'DENEGADO',
+                    autorizado ? 'INGRESO PERMITIDO' : 'INGRESO NO PERMITIDO',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: color,
                       fontWeight: FontWeight.bold,
@@ -197,4 +197,4 @@ String _formatearFecha(DateTime fecha) {
 }
 
 String _etiquetaMotivo(String motivo) =>
-    motivo.replaceAll('_', ' ').toLowerCase();
+    mensajeDecisionIngresoParaUsuario(motivo);

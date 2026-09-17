@@ -1,7 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+
+import 'visor_escaner_qr_linux_noop.dart'
+    if (dart.library.io) 'visor_escaner_qr_linux.dart';
 
 class VisorEscanerQr extends StatefulWidget {
   const VisorEscanerQr({required this.alDetectar, super.key});
@@ -91,6 +95,9 @@ class _EstadoVisorEscanerQr extends State<VisorEscanerQr>
 
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform == TargetPlatform.linux) {
+      return VisorEscanerQrLinux(alDetectar: widget.alDetectar);
+    }
     return Stack(
       fit: StackFit.expand,
       children: [

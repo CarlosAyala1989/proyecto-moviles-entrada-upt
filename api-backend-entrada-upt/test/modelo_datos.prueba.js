@@ -97,6 +97,25 @@ describe('Modelo de datos', () => {
     }
   });
 
+  it('mantiene google_sub como identificador opcional y único', async () => {
+    const [columna] = await grupoConexiones.query(
+      `SELECT IS_NULLABLE AS permite_nulo
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'usuarios'
+         AND COLUMN_NAME = 'google_sub'`,
+    );
+    const [indice] = await grupoConexiones.query(
+      `SELECT NON_UNIQUE AS no_unico
+       FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'usuarios'
+         AND INDEX_NAME = 'uk_usuarios_google_sub'`,
+    );
+    assert.equal(columna.permite_nulo, 'YES');
+    assert.equal(indice.no_unico, 0);
+  });
+
   it('rechaza coordenadas fuera del rango permitido', async () => {
     const conexion = await grupoConexiones.getConnection();
     try {

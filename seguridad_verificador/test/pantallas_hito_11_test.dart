@@ -54,7 +54,7 @@ void main() {
     await probador.tap(find.text('Simular lectura'));
     await probador.pumpAndSettle();
 
-    expect(find.text('INGRESO AUTORIZADO'), findsOneWidget);
+    expect(find.text('INGRESO PERMITIDO'), findsOneWidget);
     expect(find.text('María Elena Pérez Quispe'), findsOneWidget);
     expect(find.text('PRUEBA-EST-001'), findsOneWidget);
 
@@ -79,8 +79,8 @@ void main() {
     await probador.tap(find.text('Simular lectura'));
     await probador.pumpAndSettle();
 
-    expect(find.text('INGRESO DENEGADO'), findsOneWidget);
-    expect(find.text('Credencial ya utilizada'), findsOneWidget);
+    expect(find.text('INGRESO NO PERMITIDO'), findsOneWidget);
+    expect(find.textContaining('Este código ya fue usado'), findsWidgets);
     expect(find.text('María Elena Pérez Quispe'), findsNothing);
 
     await probador.pumpWidget(const SizedBox());
@@ -96,12 +96,9 @@ void main() {
     );
     await probador.pumpAndSettle();
 
-    expect(
-      find.text('Últimos 2 intentos procesados por tu cuenta'),
-      findsOneWidget,
-    );
-    expect(find.text('AUTORIZADO'), findsOneWidget);
-    expect(find.text('DENEGADO'), findsOneWidget);
+    expect(find.text('Últimos 2 ingresos comprobados'), findsOneWidget);
+    expect(find.text('INGRESO PERMITIDO'), findsOneWidget);
+    expect(find.text('INGRESO NO PERMITIDO'), findsOneWidget);
     expect(find.text('María Elena Pérez Quispe'), findsOneWidget);
 
     await probador.pumpWidget(const SizedBox());

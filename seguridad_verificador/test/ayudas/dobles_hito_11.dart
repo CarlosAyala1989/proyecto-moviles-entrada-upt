@@ -35,6 +35,26 @@ class ClienteSeguridadFalso implements ContratoClienteApi {
   UbicacionReportada? ubicacionRecibida;
 
   @override
+  Future<CaptchaIntranet> obtenerCaptchaIntranet() =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<PerfilIntranet> verificarIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
+  }) => throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<InicioGoogleOauth> iniciarGoogle(String verificacionIntranetId) =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<EstadoGoogleOauth> consultarEstadoGoogle(String transaccionId) =>
+      throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
   Future<void> cerrarSesion(String tokenAcceso) async {}
 
   @override

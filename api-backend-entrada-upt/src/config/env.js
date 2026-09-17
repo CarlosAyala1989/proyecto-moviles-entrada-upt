@@ -22,6 +22,12 @@ dotenv.config({
   quiet: true,
 });
 
+const zonaHorariaOperativa = 'America/Lima';
+if (process.env.TZ && process.env.TZ !== zonaHorariaOperativa) {
+  throw new Error(`TZ debe ser ${zonaHorariaOperativa}`);
+}
+process.env.TZ = zonaHorariaOperativa;
+
 const requiredVariables = [
   'DB_HOST',
   'DB_PORT',
@@ -50,6 +56,7 @@ function enteroPositivo(valor, nombre, valorPredeterminado) {
 
 export const entorno = Object.freeze({
   nodeEnv: process.env.NODE_ENV ?? 'development',
+  zonaHoraria: zonaHorariaOperativa,
   port: enteroPositivo(process.env.PORT, 'PORT', 3000),
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
   autenticacion: {
@@ -73,6 +80,12 @@ export const entorno = Object.freeze({
       'DURACION_BLOQUEO_MINUTOS',
       15,
     ),
+  },
+  google: {
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+    redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI ?? '',
+    dominio: (process.env.GOOGLE_WORKSPACE_DOMAIN ?? 'virtual.upt.pe').toLowerCase(),
   },
   db: {
     host: process.env.DB_HOST,

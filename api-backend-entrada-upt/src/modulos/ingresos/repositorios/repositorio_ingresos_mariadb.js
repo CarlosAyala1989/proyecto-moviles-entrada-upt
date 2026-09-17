@@ -12,19 +12,19 @@ const clavesConfiguracion = [
 const rolesPortadores = ['ESTUDIANTE', 'DOCENTE', 'TRABAJADOR'];
 
 const mensajesDecision = {
-  ACCESO_AUTORIZADO: 'Ingreso autorizado.',
-  TOKEN_INVALIDO: 'El código QR no es válido.',
-  INTEGRIDAD_CREDENCIAL_INVALIDA: 'El código QR fue alterado o está incompleto.',
-  CREDENCIAL_EXPIRADA: 'El código QR ha vencido.',
-  CREDENCIAL_REVOCADA: 'El código QR fue revocado.',
-  CREDENCIAL_YA_UTILIZADA: 'El código QR ya fue utilizado.',
-  USUARIO_NO_HABILITADO: 'El usuario no está habilitado para ingresar.',
-  IDENTIDAD_NO_VERIFICADA: 'La identidad del usuario no está verificada.',
-  ROL_PORTADOR_NO_HABILITADO: 'El usuario no posee un rol habilitado para ingresar.',
-  SESION_USUARIO_INVALIDA: 'La sesión asociada al código QR ya no es válida.',
-  PUNTO_ACCESO_INACTIVO: 'El punto de acceso no está habilitado.',
-  PUNTO_ACCESO_NO_COINCIDE: 'El código QR fue emitido para otro punto de acceso.',
-  UBICACION_ESCANEO_FUERA_DE_ZONA: 'La ubicación del escaneo está fuera de la zona permitida.',
+  ACCESO_AUTORIZADO: 'La identidad y la ubicación fueron confirmadas.',
+  TOKEN_INVALIDO: 'No reconocemos este código. Solicita uno nuevo.',
+  INTEGRIDAD_CREDENCIAL_INVALIDA: 'El código está incompleto o fue modificado.',
+  CREDENCIAL_EXPIRADA: 'Este código ya venció. Solicita el nuevo código de la pantalla.',
+  CREDENCIAL_REVOCADA: 'La persona anuló este código. Solicita uno nuevo.',
+  CREDENCIAL_YA_UTILIZADA: 'Este código ya fue usado y no puede aceptarse nuevamente.',
+  USUARIO_NO_HABILITADO: 'Esta persona no tiene permiso de ingreso en este momento.',
+  IDENTIDAD_NO_VERIFICADA: 'No pudimos confirmar la identidad de esta persona.',
+  ROL_PORTADOR_NO_HABILITADO: 'Esta cuenta no está habilitada para ingresar con la aplicación.',
+  SESION_USUARIO_INVALIDA: 'La persona debe volver a ingresar y mostrar un código nuevo.',
+  PUNTO_ACCESO_INACTIVO: 'Esta puerta no está habilitada para comprobar ingresos.',
+  PUNTO_ACCESO_NO_COINCIDE: 'Este código fue generado para otra puerta.',
+  UBICACION_ESCANEO_FUERA_DE_ZONA: 'Este equipo está fuera de la zona asignada a la puerta.',
 };
 
 async function consultarRoles(conexion, usuarioId) {

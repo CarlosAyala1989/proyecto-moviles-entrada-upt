@@ -13,6 +13,7 @@ import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/au
 import { crearEnrutadorCodigosQr } from './modulos/codigos_qr/rutas/codigos_qr.rutas.js';
 import { crearEnrutadorIdentidadDigital } from './modulos/identidad_digital/rutas/identidad_digital.rutas.js';
 import { crearEnrutadorIngresos } from './modulos/ingresos/rutas/ingresos.rutas.js';
+import { crearEnrutadorRegistroEstudiante } from './modulos/registro_estudiante/rutas/registro_estudiante.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
 export function crearAplicacion({
@@ -23,7 +24,11 @@ export function crearAplicacion({
   repositorioCodigosQr,
   repositorioIdentidadDigital,
   repositorioIngresos,
+  repositorioRegistroEstudiante,
   repositorioUsuarios,
+  servicioGoogle,
+  servicioIntranet,
+  configuracionGoogle = entorno.google,
   registrarSolicitudes = entornoEjecucion !== 'test',
 } = {}) {
   const aplicacion = express();
@@ -92,6 +97,16 @@ export function crearAplicacion({
       requerirAutenticacion,
       repositorioAdministracionOperativa,
       repositorioUsuarios,
+    }),
+  );
+  aplicacion.use(
+    '/api/registro-estudiante',
+    crearEnrutadorRegistroEstudiante({
+      servicioIntranet,
+      servicioGoogle,
+      configuracionGoogle,
+      repositorio: repositorioRegistroEstudiante,
+      servicioAutenticacion,
     }),
   );
 

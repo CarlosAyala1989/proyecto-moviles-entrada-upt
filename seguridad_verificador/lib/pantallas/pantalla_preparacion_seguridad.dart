@@ -24,7 +24,11 @@ class PantallaPreparacionSeguridad extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icono, size: 64, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                icono,
+                size: 64,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 24),
               Text(
                 titulo,

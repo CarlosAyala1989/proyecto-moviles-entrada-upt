@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +25,7 @@ Future<void> main() async {
         debugShowCheckedModeBanner: false,
         theme: construirTemaSeguridad(),
         home: PantallaConfiguracionInvalida(
-          titulo: 'Configuración no válida',
+          titulo: 'La aplicación necesita ayuda',
           mensaje: erroresConfiguracion.join('\n'),
           icono: Icons.settings_suggest_outlined,
         ),
@@ -38,10 +40,16 @@ Future<void> main() async {
     rolesPermitidos: const {'SEGURIDAD'},
   );
   await controladorSesion.restaurar();
+  final ProveedorUbicacion proveedorUbicacion =
+      kDebugMode &&
+          Platform.isLinux &&
+          ConfiguracionUbicacionDesarrollo.simulada
+      ? const ProveedorUbicacionSimuladaDesarrollo()
+      : const ProveedorUbicacionDispositivo();
   final controladorValidacion = ControladorValidacionIngresos(
     clienteApi: clienteApi,
     controladorSesion: controladorSesion,
-    proveedorUbicacion: const ProveedorUbicacionDispositivo(),
+    proveedorUbicacion: proveedorUbicacion,
     puntoAccesoCodigo: ConfiguracionSeguridad.puntoAccesoCodigo,
   );
   runApp(

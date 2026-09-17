@@ -113,6 +113,31 @@ export function crearServicioAutenticacion(repositorio, configuracion) {
       return respuestaSesion(resultado, tokens);
     },
 
+    iniciarSesionVerificada: async ({ usuario, metadatos }) => {
+      if (usuario.estado !== 'ACTIVO' || usuario.estado_autorizacion !== 'AUTORIZADO') {
+        await repositorio.registrarIntentoRechazado({
+          usuario,
+          identificadorHash: calcularHashIdentificador(`google:${usuario.id}`),
+          motivo: 'USUARIO_NO_HABILITADO',
+          ...metadatos,
+        });
+        throw errorUsuarioNoHabilitado();
+      }
+
+      const tokens = generarTokens();
+      const resultado = await repositorio.crearSesion({
+        usuario,
+        identificadorHash: calcularHashIdentificador(`google:${usuario.id}`),
+        tokenAccesoHash: calcularHashToken(tokens.tokenAcceso),
+        tokenRenovacionHash: calcularHashToken(tokens.tokenRenovacion),
+        duracionTokenAccesoMinutos: configuracion.duracionTokenAccesoMinutos,
+        duracionTokenRenovacionDias: configuracion.duracionTokenRenovacionDias,
+        motivoInicio: 'INICIO_SESION_GOOGLE',
+        ...metadatos,
+      });
+      return respuestaSesion(resultado, tokens);
+    },
+
     autenticarTokenAcceso: (token) => repositorio.obtenerSesionPorTokenAcceso(
       calcularHashToken(token),
     ),
