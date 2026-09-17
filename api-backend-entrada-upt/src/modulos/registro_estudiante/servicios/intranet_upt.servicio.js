@@ -170,7 +170,7 @@ async function extraerPerfilConOcr(pagina) {
   }
 }
 
-class SesionIntranetNavegador {
+export class SesionIntranetNavegador {
   constructor({ contexto, pagina, urlLogin }) {
     this.contexto = contexto;
     this.pagina = pagina;
@@ -206,36 +206,26 @@ class SesionIntranetNavegador {
     await this.pagina.locator('#Submit').click();
     await this.pagina.waitForLoadState('domcontentloaded', { timeout: 15_000 }).catch(() => {});
 
-    const botonAviso = this.pagina.locator('body .mfp-content button:visible').first();
-    try {
-      await botonAviso.waitFor({ state: 'visible', timeout: 3_000 });
-      await botonAviso.click();
-    } catch {
-      // El aviso sólo aparece para algunos perfiles o periodos académicos.
-    }
+    return this.abrirPerfilEstudiante();
+  }
 
-    const sigueEnLogin = await this.pagina.locator('#t1:visible').isVisible().catch(() => false);
-    if (sigueEnLogin) {
-      throw crearError(
-        'CREDENCIALES_INTRANET_INVALIDAS',
-        'El código, la contraseña o el CAPTCHA de intranet no son válidos.',
-        401,
-      );
-    }
-
+  async abrirPerfilEstudiante() {
     // Selector literal usado por ScrapEstudiante.py. No equivale a tomar el
     // enlace número 17: nth-child cuenta todos los hijos de #menu-block.
     const opcionPerfil = this.pagina.locator('#menu-block > a:nth-child(17)');
     try {
+      // login.php es una página intermedia: DOMContentLoaded no significa que
+      // inicio.php y su aviso ya estén listos. Esperar primero el menú.
       await opcionPerfil.waitFor({ state: 'attached', timeout: 15_000 });
-      try {
-        await opcionPerfil.click({ timeout: 5_000 });
-      } catch {
-        // El portal puede conservar el menú fuera del área visible; Selenium
-        // activa el mismo onclick al hacer clic y Playwright lo fuerza aquí.
-        await opcionPerfil.click({ force: true });
-      }
     } catch {
+      const sigueEnLogin = await this.pagina.locator('#t1:visible').isVisible().catch(() => false);
+      if (sigueEnLogin) {
+        throw crearError(
+          'CREDENCIALES_INTRANET_INVALIDAS',
+          'El código, la contraseña o el CAPTCHA de intranet no son válidos.',
+          401,
+        );
+      }
       const perfilDisponible = await this.leerPerfilActual();
       if (perfilDisponible) return perfilDisponible;
       throw crearError(
@@ -245,8 +235,28 @@ class SesionIntranetNavegador {
       );
     }
 
-    await this.pagina.getByRole('link', { name: 'Notas', exact: true })
-      .waitFor({ state: 'visible', timeout: 15_000 })
+    const botonAviso = this.pagina.locator('body .mfp-content button:visible').first();
+    try {
+      await botonAviso.waitFor({ state: 'visible', timeout: 3_000 });
+      await botonAviso.click();
+    } catch {
+      // Algunos periodos no muestran aviso. El clic normal espera que la
+      // opción reciba eventos; un clic forzado puede golpear el aviso encima.
+    }
+
+    try {
+      await opcionPerfil.click({ timeout: 15_000 });
+    } catch {
+      throw crearError(
+        'NAVEGACION_INTRANET_INVALIDA',
+        'La intranet no permitió abrir la página del estudiante.',
+        422,
+      );
+    }
+
+    // El perfil está en los dos h1 de alumno.php; no requiere abrir Notas.
+    await this.pagina.getByRole('heading', { name: /^\d{10}$/u })
+      .waitFor({ state: 'visible', timeout: 10_000 })
       .catch(() => {});
     return this.leerPerfilActual();
   }
