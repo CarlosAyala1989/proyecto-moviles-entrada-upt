@@ -93,6 +93,8 @@ export const entorno = Object.freeze({
     database: process.env.DB_DATABASE,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
+    allowPublicKeyRetrieval: process.env.DB_ALLOW_PUBLIC_KEY_RETRIEVAL === 'true',
+    cachingRsaPublicKey: process.env.DB_CACHING_RSA_PUBLIC_KEY || undefined,
     connectionLimit: enteroPositivo(
       process.env.DB_CONNECTION_LIMIT,
       'DB_CONNECTION_LIMIT',

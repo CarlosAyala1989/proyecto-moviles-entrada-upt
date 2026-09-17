@@ -100,6 +100,9 @@ si el verificador conserva el punto ficticio `PRUEBA-LOCAL`.
 
 ## Verificación unificada
 
+La conexión interna de la API con MySQL en Dokploy está explicada en
+[la guía de despliegue](api-backend-entrada-upt/docs/despliegue_dokploy.md).
+
 Ejecutar backend, análisis estático, todas las pruebas Flutter y el recorrido
 real de los 30 endpoints que no dependen de los proveedores externos, mediante
 Express, MariaDB y el cliente Dart:

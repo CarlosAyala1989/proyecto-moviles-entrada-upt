@@ -11,6 +11,7 @@
     "test": "NODE_ENV=test node --test --test-concurrency=1",
     "test:flujo-completo": "NODE_ENV=test node scripts/verificar_flujo_completo.js",
     "migrar": "node scripts/ejecutar_migraciones.js",
+    "verificar:bd": "node scripts/verificar_conexion_bd.js",
     "sembrar:pruebas": "node scripts/cargar_datos_prueba.js",
     "crear:administrador-inicial": "node scripts/crear_administrador_inicial.js",
     "crear:administrador-desarrollo": "node scripts/generar_administrador_desarrollo.js"

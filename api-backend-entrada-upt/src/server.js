@@ -7,9 +7,9 @@ const servidor = app.listen(entorno.port, '0.0.0.0', async () => {
 
   try {
     await verificarConexionBaseDatos();
-    console.log('Conexión con MariaDB establecida');
+    console.log('Conexión con la base de datos establecida');
   } catch (error) {
-    console.error('La API inició, pero MariaDB no está disponible:', error.message);
+    console.error('La API inició, pero la base de datos no está disponible:', error.message);
   }
 });
 
