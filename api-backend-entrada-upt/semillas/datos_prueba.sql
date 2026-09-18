@@ -89,3 +89,9 @@ ON DUPLICATE KEY UPDATE
   longitud = VALUES(longitud),
   radio_permitido_metros = VALUES(radio_permitido_metros),
   estado = VALUES(estado);
+
+
+INSERT INTO asignaciones_seguridad (usuario_id, punto_acceso_id, asignado_por)
+SELECT u.id, p.id, u.id FROM usuarios u JOIN puntos_acceso p ON p.codigo = 'PRUEBA-LOCAL'
+WHERE u.codigo_institucional = 'PRUEBA-SEG-001'
+ON DUPLICATE KEY UPDATE punto_acceso_id = VALUES(punto_acceso_id);

@@ -101,6 +101,7 @@ void main() {
         final recientes = await api.consultarIngresosRecientes(
           tokenSeguridad,
           limite: 10,
+          ubicacion: _ubicacionActual(),
         );
         expect(
           recientes.any(

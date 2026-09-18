@@ -1,13 +1,13 @@
 # Aplicación de control de acceso
 
-Aplicación Flutter destinada al personal de seguridad de la UPT. Incluye inicio
-de sesión restringido al rol `SEGURIDAD`, escaneo de códigos QR, validación con
-ubicación y consulta del historial reciente del operador.
+Aplicación Flutter para administración y personal de seguridad de la UPT.
+El administrador gestiona puertas y guardias desde cualquier ubicación. El
+guardia sólo puede escanear y consultar historial cerca de su puerta asignada.
 
 ## Estructura
 
 - `lib/aplicacion`: configuración principal de la aplicación.
-- `lib/configuracion`: punto de acceso asignado a la instalación.
+- `lib/configuracion`: opciones de desarrollo.
 - `lib/controladores`: estado de validación e historial.
 - `lib/navegacion`: nombres de rutas.
 - `lib/pantallas`: inicio de sesión, escáner, resultado e historial.
@@ -17,40 +17,32 @@ ubicación y consulta del historial reciente del operador.
 - `../paquetes/cliente_api_upt`: modelos, cliente HTTP y manejo compartido de
   sesión.
 
-La aplicación sólo envía el código, el punto configurado y la ubicación
+La aplicación sólo envía el código, el punto asignado por la API y la ubicación
 declarada. No interpreta la credencial ni conserva su contenido. El backend es
 la única autoridad que permite o deniega un ingreso.
 
 ## Configuración del backend
 
-La URL se inyecta con `URL_API_UPT`. El valor de desarrollo predeterminado es
-`http://127.0.0.1:3000/api`, por lo que en Linux, con la API iniciada en el
-puerto 3000, se ejecuta directamente con `flutter run -d Linux`. Un emulador
-Android debe sobrescribirla con `http://10.0.2.2:3000/api`; para un dispositivo
-físico se deberá usar una dirección local alcanzable y, en un entorno real,
-HTTPS.
+La URL predeterminada es `https://api-moviles.fottuto.men/api` y se puede
+sobrescribir con `URL_API_UPT` para desarrollo local. El mismo APK sirve para
+todas las puertas: la API obtiene la asignación del usuario y ya no requiere
+`PUNTO_ACCESO_CODIGO` al compilar.
 
-El código del punto de acceso se fija en compilación. `PRUEBA-LOCAL` sirve
-únicamente para el entorno local:
-
-```text
---dart-define=PUNTO_ACCESO_CODIGO=PUERTA-PRINCIPAL
-```
-
-Las compilaciones de producción rechazan HTTP y también el punto ficticio
-`PRUEBA-LOCAL` antes de restaurar la sesión.
-
-Una ejecución local completa puede combinar ambas opciones:
+El administrador entra con una cuenta de rol `ADMINISTRADOR` y ve el panel.
+Consulta [la creación del primer administrador y la configuración de guardias](../api-backend-entrada-upt/docs/administracion_guardias.md).
+El guardia activa ubicación después del acceso. Fuera de zona aparece la
+pantalla de ayuda; se reevalúa periódicamente y el backend comprueba también
+la ubicación en cada operación. La cámara se solicita al abrir el escáner.
 
 ```bash
-flutter run \
-  --dart-define=URL_API_UPT=http://DIRECCION_LOCAL:3000/api \
-  --dart-define=PUNTO_ACCESO_CODIGO=PUERTA-PRINCIPAL
+flutter run -d linux
+# API de desarrollo local:
+flutter run -d linux --dart-define=URL_API_UPT=http://127.0.0.1:3000/api
+# APK con la API HTTPS predeterminada:
+flutter build apk --release
 ```
 
-La aplicación solicita cámara y ubicación solamente durante el uso. La
-verificación local se ejecuta con `flutter analyze`, `flutter test` y
-`flutter build apk --debug`.
+La verificación local se ejecuta con `flutter analyze` y `flutter test`.
 
 ## Funciones del dispositivo en Linux
 

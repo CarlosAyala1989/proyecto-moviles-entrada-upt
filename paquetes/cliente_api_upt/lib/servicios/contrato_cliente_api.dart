@@ -39,5 +39,6 @@ abstract interface class ContratoClienteApi {
   Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
     String tokenAcceso, {
     int limite = 20,
+    UbicacionReportada? ubicacion,
   });
 }

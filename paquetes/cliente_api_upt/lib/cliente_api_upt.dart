@@ -19,3 +19,5 @@ export 'sesion/controlador_sesion.dart';
 export 'utilidades/estado_carga.dart';
 export 'utilidades/mensajes_usuario.dart';
 export 'widgets/pantalla_configuracion_invalida.dart';
+
+export 'servicios/contratos_operacion.dart';

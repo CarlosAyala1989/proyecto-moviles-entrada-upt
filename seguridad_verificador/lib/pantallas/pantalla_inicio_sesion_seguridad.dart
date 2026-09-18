@@ -67,7 +67,7 @@ class _EstadoPantallaInicioSesionSeguridad
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Acceso exclusivo para personal de seguridad habilitado.',
+                      'Acceso para administración y personal de seguridad.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 28),
@@ -75,12 +75,12 @@ class _EstadoPantallaInicioSesionSeguridad
                       controller: _identificador,
                       enabled: !procesando,
                       decoration: const InputDecoration(
-                        labelText: 'Código o correo institucional',
+                        labelText: 'Usuario o correo',
                         prefixIcon: Icon(Icons.person_outline),
                       ),
                       validator: (valor) =>
                           valor == null || valor.trim().isEmpty
-                          ? 'Ingresa tu código o correo institucional.'
+                          ? 'Ingresa tu usuario o correo.'
                           : null,
                     ),
                     const SizedBox(height: 16),

@@ -1,3 +1,5 @@
+import '../pantallas/pantalla_administracion.dart';
+import '../pantallas/puerta_operativa_seguridad.dart';
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/material.dart';
 
@@ -13,11 +15,13 @@ import '../tema/tema_seguridad.dart';
 class AplicacionSeguridad extends StatelessWidget {
   const AplicacionSeguridad({
     required this.controladorSesion,
+    this.clienteAdministracion,
     required this.controladorValidacion,
     super.key,
   });
 
   final ControladorSesion controladorSesion;
+  final ContratoAdministracion? clienteAdministracion;
   final ControladorValidacionIngresos controladorValidacion;
 
   @override
@@ -36,6 +40,20 @@ class AplicacionSeguridad extends StatelessWidget {
               PantallaHistorial(controlador: controladorValidacion),
         },
         home: _pantallaInicial(),
+        builder: (context, child) {
+          if (controladorSesion.estaAutenticada &&
+              !controladorSesion.sesion!.usuario.roles.contains(
+                'ADMINISTRADOR',
+              ) &&
+              controladorValidacion.exigeUbicacion) {
+            return PuertaOperativaSeguridad(
+              controlador: controladorValidacion,
+              sesion: controladorSesion,
+              child: child!,
+            );
+          }
+          return child!;
+        },
       ),
     );
   }
@@ -51,6 +69,13 @@ class AplicacionSeguridad extends StatelessWidget {
       );
     }
     if (controladorSesion.estaAutenticada) {
+      if (controladorSesion.sesion!.usuario.roles.contains('ADMINISTRADOR') &&
+          clienteAdministracion != null) {
+        return PantallaAdministracion(
+          sesion: controladorSesion,
+          api: clienteAdministracion!,
+        );
+      }
       return PantallaInicioSeguridad(controladorSesion: controladorSesion);
     }
     return PantallaInicioSesionSeguridad(controladorSesion: controladorSesion);

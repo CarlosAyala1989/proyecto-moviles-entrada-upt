@@ -58,7 +58,7 @@ Abre una terminal del contenedor de la **API** y ejecuta en `/app`:
 npm run verificar:bd
 ```
 
-El comando es de solo lectura: comprueba conexión, nombre de la base, versión del servidor y las 13 tablas requeridas. No imprime contraseñas ni cambia filas. Debe mostrar `Conexión correcta` y `Las 13 tablas requeridas están disponibles`.
+El comando es de solo lectura: comprueba conexión, nombre de la base, versión del servidor y las 14 tablas requeridas. No imprime contraseñas ni cambia filas. Debe mostrar `Conexión correcta` y `Las 14 tablas requeridas están disponibles`.
 
 Después consulta desde el mismo contenedor:
 
@@ -141,3 +141,9 @@ y [confirmación implícita del DDL](https://dev.mysql.com/doc/refman/8.4/en/imp
 - `ER_CANNOT_RETRIEVE_RSA_KEY`: revisa `DB_ALLOW_PUBLIC_KEY_RETRIEVAL=true` para la conexión interna MySQL 8. Como alternativa, monta el PEM de la clave pública del servidor y configura `DB_CACHING_RSA_PUBLIC_KEY` con su ruta.
 
 Referencias: [credenciales internas](https://docs.dokploy.com/docs/core/databases/connection), [variables Environment](https://docs.dokploy.com/docs/core/variables) y [red de una Application](https://docs.dokploy.com/docs/core/applications/advanced).
+
+## Primer administrador y guardias
+
+Consulta [la guía del panel, puertas, guardias y GPS](administracion_guardias.md).
+Las variables privadas `ADMIN_INICIAL_*` permiten crear la primera cuenta
+al arrancar. Las asignaciones se instalan mediante la migración 011.

@@ -47,6 +47,7 @@ async function eliminarDatosPrueba() {
     const condiciones = [];
     const parametros = [];
     if (usuarios.length > 0) {
+    await grupoConexiones.query(`DELETE FROM asignaciones_seguridad WHERE usuario_id IN (${usuarios.map(() => '?').join(', ')}) OR asignado_por IN (${usuarios.map(() => '?').join(', ')})`, [...usuarios, ...usuarios]);
       const marcadores = usuarios.map(() => '?').join(', ');
       condiciones.push(`usuario_id IN (${marcadores})`);
       parametros.push(...usuarios);
@@ -146,6 +147,10 @@ async function crearDatosPrueba() {
   );
   idsPuntos.set(codigoPuntoPrincipal, puntoPrincipal.insertId);
   idsPuntos.set(codigoPuntoSecundario, puntoSecundario.insertId);
+
+  for (const codigo of ['PRUEBA-OPERATIVA-SEG-A', 'PRUEBA-OPERATIVA-SEG-B']) {
+    await grupoConexiones.query('INSERT INTO asignaciones_seguridad (usuario_id, punto_acceso_id, asignado_por) VALUES (?, ?, ?)', [idsUsuarios.get(codigo), puntoPrincipal.insertId, idsUsuarios.get('PRUEBA-OPERATIVA-ADMIN')]);
+  }
 
   const registros = [
     {
@@ -303,6 +308,7 @@ describe('Administración operativa y trazabilidad', { concurrency: false }, () 
   it('muestra al personal de seguridad sólo su historial reciente', async () => {
     const seguridadA = await request(aplicacion)
       .get('/api/ingresos/recientes?limite=10')
+      .query({ latitud: 12, longitud: 12, precision_metros: 5, obtenida_en: new Date().toISOString() })
       .set('authorization', `Bearer ${tokenSeguridadA}`)
       .expect(200);
     assert.equal(seguridadA.body.datos.length, 2);
@@ -320,6 +326,7 @@ describe('Administración operativa y trazabilidad', { concurrency: false }, () 
 
     const seguridadB = await request(aplicacion)
       .get('/api/ingresos/recientes')
+      .query({ latitud: 12, longitud: 12, precision_metros: 5, obtenida_en: new Date().toISOString() })
       .set('authorization', `Bearer ${tokenSeguridadB}`)
       .expect(200);
     assert.equal(seguridadB.body.datos.length, 1);

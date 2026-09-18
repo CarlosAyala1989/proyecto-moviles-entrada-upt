@@ -18,6 +18,7 @@ class ClienteHistorialPendiente extends ClienteSeguridadFalso {
   Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
     String tokenAcceso, {
     int limite = 20,
+    UbicacionReportada? ubicacion,
   }) {
     consultaIniciada.complete();
     return respuesta.future;

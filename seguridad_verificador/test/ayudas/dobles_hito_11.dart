@@ -65,6 +65,7 @@ class ClienteSeguridadFalso implements ContratoClienteApi {
   Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
     String tokenAcceso, {
     int limite = 20,
+    UbicacionReportada? ubicacion,
   }) async {
     consultasHistorial += 1;
     return registros.take(limite).toList(growable: false);

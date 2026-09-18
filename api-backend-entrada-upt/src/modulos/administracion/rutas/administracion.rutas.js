@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { crearEnrutadorGuardias } from '../../seguridad_operativa/seguridad_operativa.js';
 import { requerirRoles } from '../../../middleware/requerir_roles.js';
 import { crearEnrutadorAdministracionOperativa } from '../../administracion_operativa/rutas/administracion_operativa.rutas.js';
 import { crearEnrutadorAdministracionUsuarios } from '../../usuarios/rutas/administracion_usuarios.rutas.js';
@@ -10,6 +11,7 @@ export function crearEnrutadorAdministracion({
 }) {
   const enrutador = Router();
   enrutador.use(requerirAutenticacion, requerirRoles('ADMINISTRADOR'));
+  enrutador.use(crearEnrutadorGuardias());
   enrutador.use(crearEnrutadorAdministracionUsuarios({
     requerirAutenticacion,
     repositorio: repositorioUsuarios,

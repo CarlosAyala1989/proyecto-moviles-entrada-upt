@@ -110,6 +110,7 @@ class ClienteApiFalso implements ContratoClienteApi {
   Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
     String tokenAcceso, {
     int limite = 20,
+    UbicacionReportada? ubicacion,
   }) => throw UnsupportedError('Operación fuera del alcance de esta prueba.');
 
   @override

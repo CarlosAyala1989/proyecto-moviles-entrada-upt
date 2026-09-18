@@ -86,6 +86,14 @@ String mensajeErrorParaUsuario(String codigo) {
         'La intranet permitió el acceso, pero no pudimos leer tus datos. Carga otra imagen e inténtalo nuevamente.',
     'CODIGO_INTRANET_NO_COINCIDE':
         'El código obtenido no coincide con el que ingresaste. Pide ayuda a la universidad.',
+    'SEGURIDAD_SIN_ASIGNACION':
+        'Antes de usar la aplicación, el administrador debe asignarte a una puerta de la universidad.',
+    'SEGURIDAD_FUERA_DE_ZONA':
+        'Debes estar dentro del área de tu puerta asignada. Acércate y comprueba nuevamente tu ubicación.',
+    'SEGURIDAD_PUNTO_NO_ASIGNADO':
+        'Sólo puedes operar en la puerta asignada por el administrador.',
+    'GUARDIA_NO_ENCONTRADO':
+        'Esta cuenta no corresponde a un guardia. Revisa el usuario.',
     'GOOGLE_OAUTH_NO_CONFIGURADO':
         'El acceso con Google institucional aún no está disponible. Pide ayuda al responsable del sistema.',
     'GOOGLE_OAUTH_CANCELADO':

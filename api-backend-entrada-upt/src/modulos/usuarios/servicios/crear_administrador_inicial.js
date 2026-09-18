@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
 
-export async function crearAdministradorInicial(conexion, datos) {
+export async function crearAdministradorInicial(conexion, datos, { metodo = 'COMANDO_LOCAL' } = {}) {
   const [administradorExistente] = await conexion.query(
     `SELECT usuarios.id
      FROM usuarios
@@ -59,7 +59,7 @@ export async function crearAdministradorInicial(conexion, datos) {
     [
       resultado.insertId,
       String(resultado.insertId),
-      JSON.stringify({ metodo: 'COMANDO_LOCAL' }),
+      JSON.stringify({ metodo }),
     ],
   );
 

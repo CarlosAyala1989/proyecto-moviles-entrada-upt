@@ -132,3 +132,6 @@ servicio como `DB_HOST` y su puerto interno `3306`.
 ```bash
 docker build -t api-entrada-upt .
 ```
+
+La creación del administrador de Dokploy y el panel Flutter para puertas y
+guardias están documentados en [Administración y GPS](docs/administracion_guardias.md).

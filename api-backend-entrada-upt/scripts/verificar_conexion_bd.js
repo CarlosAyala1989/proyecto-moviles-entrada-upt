@@ -2,6 +2,7 @@ import { grupoConexiones } from '../src/config/database.js';
 import { entorno } from '../src/config/env.js';
 
 const tablasRequeridas = [
+  'asignaciones_seguridad',
   'configuraciones_sistema',
   'credenciales_acceso',
   'dispositivos',

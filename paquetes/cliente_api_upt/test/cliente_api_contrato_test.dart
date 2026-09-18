@@ -14,6 +14,49 @@ http.Response respuestaJson(Object datos) => http.Response(
 void main() {
   group('Contrato HTTP móvil', () {
     test(
+      'decodifica las listas de administración y conserva la contraseña al editar un guardia',
+      () async {
+        final solicitudes = <http.Request>[];
+        final cliente = ClienteApi(
+          urlBase: 'https://acceso.example.invalid/api',
+          clienteHttp: MockClient((solicitud) async {
+            solicitudes.add(solicitud);
+            if (solicitud.method != 'GET') return respuestaJson({'id': 2});
+            return respuestaJson([
+              {'id': 2, 'nombre': 'Puerta principal'},
+            ]);
+          }),
+        );
+        expect((await cliente.consultarPuertas('token-admin')).single['id'], 2);
+        expect(
+          (await cliente.consultarGuardias('token-admin')).single['id'],
+          2,
+        );
+        await cliente.guardarGuardia('token-admin', {
+          'usuario': 'GUARDIA-01',
+          'nombres': 'Juan',
+          'apellidos': 'Pérez',
+          'activo': true,
+          'punto_acceso_id': 2,
+        }, id: 3);
+        expect(solicitudes.first.url.path, '/api/administracion/puntos-acceso');
+        expect(solicitudes.first.url.queryParameters['limite'], '100');
+        expect(solicitudes[1].url.path, '/api/administracion/guardias');
+        expect(solicitudes.last.method, 'PUT');
+        expect(solicitudes.last.url.path, '/api/administracion/guardias/3');
+        expect(
+          jsonDecode(solicitudes.last.body),
+          isNot(contains('contrasena')),
+        );
+        expect(
+          solicitudes.every(
+            (s) => s.headers['authorization'] == 'Bearer token-admin',
+          ),
+          isTrue,
+        );
+      },
+    );
+    test(
       'obtiene CAPTCHA y envía la verificación exclusivamente al backend',
       () async {
         final solicitudes = <http.Request>[];

@@ -18,4 +18,8 @@ export const esquemaValidarIngreso = z.object({
 
 export const esquemaConsultarIngresosRecientes = z.object({
   limite: z.coerce.number().int().positive().max(50).default(20),
+  latitud: z.coerce.number().min(-90).max(90),
+  longitud: z.coerce.number().min(-180).max(180),
+  precision_metros: z.coerce.number().nonnegative().max(10_000),
+  obtenida_en: z.string().datetime({ offset: true }),
 }).strict();

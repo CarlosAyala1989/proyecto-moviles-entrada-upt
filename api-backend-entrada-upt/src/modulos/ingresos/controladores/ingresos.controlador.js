@@ -12,6 +12,7 @@ export function crearControladorIngresos(servicio) {
       const registros = await servicio.consultarRecientes({
         usuarioSeguridadId: solicitud.usuarioAutenticado.id,
         limite: solicitud.datosValidados.consulta.limite,
+        ubicacion: solicitud.datosValidados.consulta,
       });
       respuesta.json({ datos: registros });
     },

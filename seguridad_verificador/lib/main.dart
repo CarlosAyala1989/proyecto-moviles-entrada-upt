@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'aplicacion/aplicacion_seguridad.dart';
-import 'configuracion/configuracion_seguridad.dart';
 import 'controladores/controlador_validacion_ingresos.dart';
 import 'servicios/proveedor_ubicacion.dart';
 import 'tema/tema_seguridad.dart';
@@ -14,9 +13,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final erroresConfiguracion = [
     ConfiguracionApi.validarUrlBase(exigirHttps: kReleaseMode),
-    ConfiguracionSeguridad.validarPuntoAcceso(
-      exigirPuntoInstitucional: kReleaseMode,
-    ),
   ].whereType<String>().toList(growable: false);
   if (erroresConfiguracion.isNotEmpty) {
     runApp(
@@ -37,7 +33,7 @@ Future<void> main() async {
   final controladorSesion = ControladorSesion(
     clienteApi: clienteApi,
     almacenSesion: AlmacenSesionSegura(),
-    rolesPermitidos: const {'SEGURIDAD'},
+    rolesPermitidos: const {'SEGURIDAD', 'ADMINISTRADOR'},
   );
   await controladorSesion.restaurar();
   final ProveedorUbicacion proveedorUbicacion =
@@ -50,10 +46,11 @@ Future<void> main() async {
     clienteApi: clienteApi,
     controladorSesion: controladorSesion,
     proveedorUbicacion: proveedorUbicacion,
-    puntoAccesoCodigo: ConfiguracionSeguridad.puntoAccesoCodigo,
+    controlSeguridadApi: clienteApi,
   );
   runApp(
     AplicacionSeguridad(
+      clienteAdministracion: clienteApi,
       controladorSesion: controladorSesion,
       controladorValidacion: controladorValidacion,
     ),

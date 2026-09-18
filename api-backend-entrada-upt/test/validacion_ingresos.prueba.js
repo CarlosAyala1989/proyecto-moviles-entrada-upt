@@ -61,6 +61,7 @@ async function eliminarDatosPrueba() {
     const condiciones = [];
     const parametros = [];
     if (ids.length > 0) {
+    await grupoConexiones.query(`DELETE FROM asignaciones_seguridad WHERE usuario_id IN (${ids.map(() => '?').join(', ')}) OR asignado_por IN (${ids.map(() => '?').join(', ')})`, [...ids, ...ids]);
       const marcadores = ids.map(() => '?').join(', ');
       condiciones.push(`usuario_id IN (${marcadores})`);
       parametros.push(...ids);
@@ -160,6 +161,12 @@ async function crearDatosPrueba() {
       [resultado.insertId, usuario.rol],
     );
   }
+
+  await grupoConexiones.query(
+    `INSERT INTO asignaciones_seguridad (usuario_id, punto_acceso_id, asignado_por)
+     SELECT ?, id, ? FROM puntos_acceso WHERE codigo = ?`,
+    [idsUsuarios.get('PRUEBA-INGRESO-SEGURIDAD'), idsUsuarios.get('PRUEBA-INGRESO-SEGURIDAD'), codigoPuntoPrincipal],
+  );
 
   await grupoConexiones.query(
     `INSERT INTO perfiles_academicos
@@ -355,8 +362,8 @@ describe('Validación de ingresos mediante códigos QR', { concurrency: false },
     const otroPunto = await validarIngreso(tokenSeguridad, primera.codigoQr, {
       puntoAccesoCodigo: codigoPuntoAlterno,
       ubicacion: ubicacionValida(10.0005),
-    }).expect(200);
-    assert.equal(otroPunto.body.datos.motivo, 'PUNTO_ACCESO_NO_COINCIDE');
+    }).expect(403);
+    assert.equal(otroPunto.body.error.codigo, 'SEGURIDAD_PUNTO_NO_ASIGNADO');
 
     const segunda = await emitirCodigoQr();
     const fueraZona = await validarIngreso(tokenSeguridad, segunda.codigoQr, {
@@ -365,8 +372,8 @@ describe('Validación de ingresos mediante códigos QR', { concurrency: false },
         latitud: 11,
         longitud: 11,
       },
-    }).expect(200);
-    assert.equal(fueraZona.body.datos.motivo, 'UBICACION_ESCANEO_FUERA_DE_ZONA');
+    }).expect(403);
+    assert.equal(fueraZona.body.error.codigo, 'SEGURIDAD_FUERA_DE_ZONA');
   });
 
   it('autoriza sólo una vez ante dos validaciones simultáneas', async () => {

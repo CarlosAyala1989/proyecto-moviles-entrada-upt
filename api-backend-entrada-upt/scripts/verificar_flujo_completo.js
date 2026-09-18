@@ -107,6 +107,7 @@ async function limpiarDatosPrueba() {
     const parametros = [];
     if (usuarios.length > 0) {
       const lista = marcadores(usuarios.length);
+    await grupoConexiones.query(`DELETE FROM asignaciones_seguridad WHERE usuario_id IN (${lista}) OR asignado_por IN (${lista})`, [...usuarios, ...usuarios]);
       condiciones.push(`usuario_id IN (${lista})`);
       parametros.push(...usuarios);
       condiciones.push(`usuario_seguridad_id IN (${lista})`);
@@ -124,6 +125,7 @@ async function limpiarDatosPrueba() {
 
   if (usuarios.length > 0) {
     const lista = marcadores(usuarios.length);
+    await grupoConexiones.query(`DELETE FROM asignaciones_seguridad WHERE usuario_id IN (${lista}) OR asignado_por IN (${lista})`, [...usuarios, ...usuarios]);
     await grupoConexiones.query(
       `UPDATE configuraciones_sistema SET actualizado_por = NULL
        WHERE actualizado_por IN (${lista})`,
@@ -472,6 +474,7 @@ async function ejecutarFlujoHttp() {
     estado: 201,
   });
   const puntoId = puntoCreado.datos.id;
+  await grupoConexiones.query(`INSERT INTO asignaciones_seguridad (usuario_id, punto_acceso_id, asignado_por) SELECT u.id, ?, a.id FROM usuarios u JOIN usuarios a ON a.codigo_institucional = ? WHERE u.codigo_institucional = ?`, [puntoId, codigos.administrador, codigos.seguridad]);
   const puntoActualizado = await solicitar({
     metodo: 'PATCH',
     ruta: `/api/administracion/puntos-acceso/${puntoId}`,
@@ -586,7 +589,7 @@ async function ejecutarFlujoHttp() {
   assert.equal(reuso.datos.motivo, 'CREDENCIAL_YA_UTILIZADA');
 
   const recientes = await solicitar({
-    ruta: '/api/ingresos/recientes?limite=10',
+    ruta: `/api/ingresos/recientes?limite=10&${new URLSearchParams(ubicacionActual())}`,
     idRuta: 'GET /api/ingresos/recientes',
     token: sesionSeguridad.token_acceso,
   });

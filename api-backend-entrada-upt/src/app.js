@@ -1,3 +1,4 @@
+import { crearEnrutadorUbicacionSeguridad } from './modulos/seguridad_operativa/seguridad_operativa.js';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -63,6 +64,7 @@ export function crearAplicacion({
   aplicacion.use('/api/salud', enrutadorSalud);
   // Se conserva temporalmente mientras los clientes migran a la ruta en español.
   aplicacion.use('/api/health', enrutadorSalud);
+  aplicacion.use('/api/seguridad', crearEnrutadorUbicacionSeguridad(requerirAutenticacion));
   aplicacion.use(
     '/api/autenticacion',
     crearEnrutadorAutenticacion({

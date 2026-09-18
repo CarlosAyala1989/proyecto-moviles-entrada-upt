@@ -9,6 +9,7 @@ after(async () => {
 describe('Modelo de datos', () => {
   it('contiene todas las tablas requeridas por la arquitectura', async () => {
     const tablasEsperadas = [
+      'asignaciones_seguridad',
       'configuraciones_sistema',
       'credenciales_acceso',
       'dispositivos',

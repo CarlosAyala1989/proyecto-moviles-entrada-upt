@@ -3,6 +3,7 @@ import {
   validarMomentoYPrecision,
 } from '../../codigos_qr/servicios/codigos_qr.servicio.js';
 import { interpretarCodigoQr } from '../../../seguridad/codigos_qr.js';
+import { comprobarUbicacionSeguridad } from '../../seguridad_operativa/seguridad_operativa.js';
 
 function normalizarResultado(resultado) {
   return {
@@ -23,6 +24,7 @@ export function crearServicioIngresos(repositorio) {
       ubicacion,
       usuarioSeguridadId,
     }) => {
+      await comprobarUbicacionSeguridad(usuarioSeguridadId, ubicacion, puntoAccesoCodigo);
       const configuracion = interpretarConfiguracionCodigosQr(
         await repositorio.consultarConfiguracion(),
       );
@@ -42,8 +44,9 @@ export function crearServicioIngresos(repositorio) {
       return normalizarResultado(resultado);
     },
 
-    consultarRecientes: ({ usuarioSeguridadId, limite }) => (
-      repositorio.consultarRecientes({ usuarioSeguridadId, limite })
-    ),
+    consultarRecientes: async ({ usuarioSeguridadId, limite, ubicacion }) => {
+      await comprobarUbicacionSeguridad(usuarioSeguridadId, ubicacion);
+      return repositorio.consultarRecientes({ usuarioSeguridadId, limite });
+    },
   };
 }
