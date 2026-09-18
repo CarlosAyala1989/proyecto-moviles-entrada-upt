@@ -35,4 +35,17 @@ void main() {
       'Bearer token-acceso-prueba',
     );
   });
+
+  test('permite configurar tiempoEspera personalizado desde el constructor', () {
+    final clientePorDefecto = ClienteApi();
+    expect(
+      clientePorDefecto.tiempoEspera,
+      ConfiguracionApi.duracionMaximaSolicitud,
+    );
+
+    final clienteTresSegundos = ClienteApi(
+      tiempoEspera: const Duration(seconds: 3),
+    );
+    expect(clienteTresSegundos.tiempoEspera, const Duration(seconds: 3));
+  });
 }

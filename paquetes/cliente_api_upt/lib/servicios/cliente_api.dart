@@ -1,3 +1,4 @@
+import 'contratos_operacion.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -18,7 +19,11 @@ import '../modelos/usuario_sesion.dart';
 import 'contrato_cliente_api.dart';
 import 'excepcion_api.dart';
 
-class ClienteApi implements ContratoClienteApi {
+class ClienteApi
+    implements
+        ContratoClienteApi,
+        ContratoControlSeguridad,
+        ContratoAdministracion {
   ClienteApi({
     String urlBase = ConfiguracionApi.urlBase,
     http.Client? clienteHttp,
@@ -30,6 +35,8 @@ class ClienteApi implements ContratoClienteApi {
   final String _urlBase;
   final http.Client _clienteHttp;
   final Duration _tiempoEspera;
+
+  Duration get tiempoEspera => _tiempoEspera;
 
   Uri _construirUri(String ruta, [Map<String, String>? consulta]) {
     final uri = Uri.parse('$_urlBase$ruta');
@@ -263,12 +270,17 @@ class ClienteApi implements ContratoClienteApi {
   Future<List<RegistroIngresoReciente>> consultarIngresosRecientes(
     String tokenAcceso, {
     int limite = 20,
+    UbicacionReportada? ubicacion,
   }) async {
     final respuesta = await _solicitar(
       metodo: 'GET',
       ruta: '/ingresos/recientes',
       tokenAcceso: tokenAcceso,
-      consulta: {'limite': '$limite'},
+      consulta: {
+        'limite': '$limite',
+        if (ubicacion != null)
+          ...ubicacion.aJson().map((clave, valor) => MapEntry(clave, '$valor')),
+      },
     );
     final datos = respuesta['datos'] as List<dynamic>;
     return datos
@@ -278,6 +290,72 @@ class ClienteApi implements ContratoClienteApi {
           ),
         )
         .toList(growable: false);
+  }
+
+  @override
+  Future<Map<String, dynamic>> comprobarUbicacionSeguridad(
+    String tokenAcceso,
+    UbicacionReportada ubicacion,
+  ) async => _datos(
+    await _solicitar(
+      metodo: 'POST',
+      ruta: '/seguridad/comprobar-ubicacion',
+      tokenAcceso: tokenAcceso,
+      cuerpo: {'ubicacion': ubicacion.aJson()},
+    ),
+  );
+
+  @override
+  Future<List<Map<String, dynamic>>> consultarPuertas(
+    String tokenAcceso,
+  ) async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/administracion/puntos-acceso',
+      tokenAcceso: tokenAcceso,
+      consulta: {'limite': '100'},
+    );
+    return List<Map<String, dynamic>>.from(respuesta['datos'] as List);
+  }
+
+  @override
+  Future<void> guardarPuerta(
+    String tokenAcceso,
+    Map<String, dynamic> datos, {
+    int? id,
+  }) async {
+    await _solicitar(
+      metodo: id == null ? 'POST' : 'PATCH',
+      ruta: '/administracion/puntos-acceso${id == null ? '' : '/$id'}',
+      tokenAcceso: tokenAcceso,
+      cuerpo: datos,
+    );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> consultarGuardias(
+    String tokenAcceso,
+  ) async {
+    final respuesta = await _solicitar(
+      metodo: 'GET',
+      ruta: '/administracion/guardias',
+      tokenAcceso: tokenAcceso,
+    );
+    return List<Map<String, dynamic>>.from(respuesta['datos'] as List);
+  }
+
+  @override
+  Future<void> guardarGuardia(
+    String tokenAcceso,
+    Map<String, dynamic> datos, {
+    int? id,
+  }) async {
+    await _solicitar(
+      metodo: id == null ? 'POST' : 'PUT',
+      ruta: '/administracion/guardias${id == null ? '' : '/$id'}',
+      tokenAcceso: tokenAcceso,
+      cuerpo: datos,
+    );
   }
 
   void cerrarCliente() => _clienteHttp.close();

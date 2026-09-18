@@ -31,7 +31,9 @@ Future<void> main() async {
     );
     return;
   }
-  final clienteApi = ClienteApi();
+  final clienteApi = ClienteApi(
+    tiempoEspera: const Duration(seconds: 3),
+  );
   final controladorSesion = ControladorSesion(
     clienteApi: clienteApi,
     almacenSesion: AlmacenSesionSegura(),
