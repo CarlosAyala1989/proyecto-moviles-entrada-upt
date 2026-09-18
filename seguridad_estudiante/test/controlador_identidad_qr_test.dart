@@ -270,4 +270,94 @@ void main() {
     expect(controlador.rotacionAutomatica, isTrue);
     controlador.detenerRotacionAutomatica();
   });
+
+  testWidgets(
+    'bloquea el reintento durante 10 segundos tras 3 fallos consecutivos y reinicia al éxito',
+    (probador) async {
+      var debeFallar = true;
+      final cliente = ClientePortadorFalso(
+        identidad: crearIdentidadPortador(),
+        codigoQr: crearCodigoQr(DateTime.now().toUtc()),
+      );
+      final sesion = ControladorSesion(
+        clienteApi: cliente,
+        almacenSesion: AlmacenSesionFalso(),
+        rolesPermitidos: const {'ESTUDIANTE'},
+      );
+      await sesion.iniciarSesion('PRUEBA-EST-001', 'clave-de-prueba');
+
+      final clienteConFallo = ClienteConFalloPersonalizado(
+        clienteBase: cliente,
+        debeFallar: () => debeFallar,
+      );
+
+      final controlador = ControladorIdentidadQr(
+        clienteApi: clienteConFallo,
+        controladorSesion: sesion,
+        proveedorUbicacion: ProveedorUbicacionFalso(ubicacion: crearUbicacion()),
+      );
+      addTearDown(controlador.dispose);
+      addTearDown(sesion.dispose);
+
+      // Intento 1
+      expect(await controlador.cargarIdentidad(forzar: true), isFalse);
+      expect(controlador.intentosFallidosConsecutivos, 1);
+      expect(controlador.estaBloqueadoPorReintentos, isFalse);
+
+      // Intento 2
+      expect(await controlador.cargarIdentidad(forzar: true), isFalse);
+      expect(controlador.intentosFallidosConsecutivos, 2);
+      expect(controlador.estaBloqueadoPorReintentos, isFalse);
+
+      // Intento 3 -> debe bloquearse 10 segundos
+      expect(await controlador.cargarIdentidad(forzar: true), isFalse);
+      expect(controlador.intentosFallidosConsecutivos, 3);
+      expect(controlador.estaBloqueadoPorReintentos, isTrue);
+      expect(controlador.segundosBloqueoReintento, 10);
+
+      // Mientras esté bloqueado, no debe permitir cargar
+      expect(await controlador.cargarIdentidad(forzar: true), isFalse);
+
+      // Avanzamos 5 segundos
+      await probador.pump(const Duration(seconds: 5));
+      expect(controlador.estaBloqueadoPorReintentos, isTrue);
+      expect(controlador.segundosBloqueoReintento, 5);
+
+      // Avanzamos 5 segundos más (total 10)
+      await probador.pump(const Duration(seconds: 5));
+      expect(controlador.estaBloqueadoPorReintentos, isFalse);
+      expect(controlador.segundosBloqueoReintento, 0);
+
+      // Ahora que se desbloqueó, responde con éxito
+      debeFallar = false;
+      expect(await controlador.cargarIdentidad(forzar: true), isTrue);
+      expect(controlador.intentosFallidosConsecutivos, 0);
+      expect(controlador.identidad.fase, FaseCarga.completada);
+    },
+  );
+}
+
+class ClienteConFalloPersonalizado extends ClientePortadorFalso {
+  ClienteConFalloPersonalizado({
+    required ContratoClienteApi clienteBase,
+    required this.debeFallar,
+  }) : _clienteBase = clienteBase,
+       super(
+         identidad: crearIdentidadPortador(),
+         codigoQr: crearCodigoQr(DateTime.now().toUtc()),
+       );
+
+  final ContratoClienteApi _clienteBase;
+  final bool Function() debeFallar;
+
+  @override
+  Future<IdentidadDigital> consultarIdentidadDigital(String tokenAcceso) {
+    if (debeFallar()) {
+      throw const ExcepcionApi(
+        codigo: 'ERROR_CONEXION',
+        mensaje: 'Sin conexión.',
+      );
+    }
+    return _clienteBase.consultarIdentidadDigital(tokenAcceso);
+  }
 }

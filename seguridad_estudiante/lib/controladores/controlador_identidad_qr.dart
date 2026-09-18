@@ -28,6 +28,9 @@ class ControladorIdentidadQr extends ChangeNotifier {
   EstadoCarga<CodigoQrTemporal> _codigoQr = const EstadoCarga.inicial();
   int _revisionSesion;
   int _segundosRestantes = 0;
+  int _intentosFallidosConsecutivos = 0;
+  int _segundosBloqueoReintento = 0;
+  Timer? _temporizadorBloqueoReintento;
   bool _revocando = false;
   bool _rotacionAutomatica = false;
   bool _rotacionEnCurso = false;
@@ -38,6 +41,9 @@ class ControladorIdentidadQr extends ChangeNotifier {
   EstadoCarga<IdentidadDigital> get identidad => _identidad;
   EstadoCarga<CodigoQrTemporal> get codigoQr => _codigoQr;
   int get segundosRestantes => _segundosRestantes;
+  int get intentosFallidosConsecutivos => _intentosFallidosConsecutivos;
+  int get segundosBloqueoReintento => _segundosBloqueoReintento;
+  bool get estaBloqueadoPorReintentos => _segundosBloqueoReintento > 0;
   bool get revocando => _revocando;
   bool get rotacionAutomatica => _rotacionAutomatica;
   bool get usaUbicacionSimulada =>
@@ -47,6 +53,7 @@ class ControladorIdentidadQr extends ChangeNotifier {
       _codigoQr.fase == FaseCarga.completada && _segundosRestantes > 0;
 
   Future<bool> cargarIdentidad({bool forzar = false}) async {
+    if (estaBloqueadoPorReintentos) return false;
     if (!forzar && _identidad.fase == FaseCarga.completada) return true;
     if (_identidad.fase == FaseCarga.cargando) return false;
 
@@ -58,20 +65,53 @@ class ControladorIdentidadQr extends ChangeNotifier {
       if (!_solicitudVigente(revision)) return false;
       final resultado = await _clienteApi.consultarIdentidadDigital(token);
       if (!_solicitudVigente(revision)) return false;
+      _intentosFallidosConsecutivos = 0;
       _identidad = EstadoCarga.completada(resultado);
       notifyListeners();
       return true;
     } on ExcepcionApi catch (error) {
       if (!_solicitudVigente(revision)) return false;
+      _registrarFalloReintento();
       _identidad = EstadoCarga.error(error.mensajeParaUsuario);
     } catch (_) {
       if (!_solicitudVigente(revision)) return false;
+      _registrarFalloReintento();
       _identidad = const EstadoCarga.error(
         'No fue posible consultar la identidad digital.',
       );
     }
     notifyListeners();
     return false;
+  }
+
+  void _registrarFalloReintento() {
+    _intentosFallidosConsecutivos += 1;
+    if (_intentosFallidosConsecutivos >= 3) {
+      _iniciarBloqueoReintento();
+    }
+  }
+
+  void _iniciarBloqueoReintento() {
+    _cancelarTemporizadorBloqueo();
+    _segundosBloqueoReintento = 10;
+    _temporizadorBloqueoReintento = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        if (_segundosBloqueoReintento > 1) {
+          _segundosBloqueoReintento -= 1;
+          notifyListeners();
+        } else {
+          _segundosBloqueoReintento = 0;
+          _cancelarTemporizadorBloqueo();
+          notifyListeners();
+        }
+      },
+    );
+  }
+
+  void _cancelarTemporizadorBloqueo() {
+    _temporizadorBloqueoReintento?.cancel();
+    _temporizadorBloqueoReintento = null;
   }
 
   Future<bool> iniciarRotacionAutomatica() async {
@@ -208,6 +248,7 @@ class ControladorIdentidadQr extends ChangeNotifier {
     if (nuevaRevision == _revisionSesion) return;
     _revisionSesion = nuevaRevision;
     _identidad = const EstadoCarga.inicial();
+    _limpiarReintentos();
     _limpiarCodigoQr();
     notifyListeners();
   }
@@ -216,6 +257,12 @@ class ControladorIdentidadQr extends ChangeNotifier {
       !_descartado &&
       revision == _controladorSesion.revisionAutenticacion &&
       _controladorSesion.estaAutenticada;
+
+  void _limpiarReintentos() {
+    _cancelarTemporizadorBloqueo();
+    _intentosFallidosConsecutivos = 0;
+    _segundosBloqueoReintento = 0;
+  }
 
   void _limpiarCodigoQr() {
     _cancelarTemporizador();
@@ -238,6 +285,7 @@ class ControladorIdentidadQr extends ChangeNotifier {
     _revisionSesion += 1;
     _controladorSesion.removeListener(_alCambiarSesion);
     _cancelarTemporizador();
+    _cancelarTemporizadorBloqueo();
     super.dispose();
   }
 }

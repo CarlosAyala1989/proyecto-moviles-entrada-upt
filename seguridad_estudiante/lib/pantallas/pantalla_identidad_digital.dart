@@ -29,21 +29,33 @@ class _EstadoPantallaIdentidadDigital extends State<PantallaIdentidadDigital> {
         animation: widget.controlador,
         builder: (context, _) {
           final estado = widget.controlador.identidad;
-          return switch (estado.fase) {
-            FaseCarga.inicial || FaseCarga.cargando => const Center(
+          final cargando = estado.fase == FaseCarga.cargando;
+          final inicial = estado.fase == FaseCarga.inicial;
+          final bloqueado = widget.controlador.estaBloqueadoPorReintentos;
+          final segundosBloqueo = widget.controlador.segundosBloqueoReintento;
+
+          if (inicial) {
+            return const Center(
               child: CircularProgressIndicator(),
-            ),
-            FaseCarga.error => _EstadoErrorIdentidad(
-              mensaje: estado.mensaje!,
-              alReintentar: () =>
-                  widget.controlador.cargarIdentidad(forzar: true),
-            ),
-            FaseCarga.completada => _ContenidoIdentidad(
+            );
+          }
+
+          if (estado.fase == FaseCarga.completada) {
+            return _ContenidoIdentidad(
               identidad: estado.datos!,
               alActualizar: () =>
                   widget.controlador.cargarIdentidad(forzar: true),
-            ),
-          };
+            );
+          }
+
+          return _EstadoErrorIdentidad(
+            mensaje: estado.mensaje ?? 'Ocurrió un error al cargar la identidad.',
+            estaCargando: cargando,
+            estaBloqueado: bloqueado,
+            segundosBloqueo: segundosBloqueo,
+            alReintentar: () =>
+                widget.controlador.cargarIdentidad(forzar: true),
+          );
         },
       ),
     );
@@ -289,13 +301,41 @@ class _EstadoErrorIdentidad extends StatelessWidget {
   const _EstadoErrorIdentidad({
     required this.mensaje,
     required this.alReintentar,
+    this.estaCargando = false,
+    this.estaBloqueado = false,
+    this.segundosBloqueo = 0,
   });
 
   final String mensaje;
   final VoidCallback alReintentar;
+  final bool estaCargando;
+  final bool estaBloqueado;
+  final int segundosBloqueo;
 
   @override
   Widget build(BuildContext context) {
+    final String etiquetaBoton;
+    final Widget iconoBoton;
+    final VoidCallback? accionBoton;
+
+    if (estaCargando) {
+      etiquetaBoton = 'Reintentando...';
+      iconoBoton = const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+      accionBoton = null;
+    } else if (estaBloqueado) {
+      etiquetaBoton = 'Reintentar en $segundosBloqueo s';
+      iconoBoton = const Icon(Icons.timer_outlined);
+      accionBoton = null;
+    } else {
+      etiquetaBoton = 'Reintentar';
+      iconoBoton = const Icon(Icons.refresh);
+      accionBoton = alReintentar;
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -311,9 +351,9 @@ class _EstadoErrorIdentidad extends StatelessWidget {
             Semantics(liveRegion: true, child: Text(mensaje)),
             const SizedBox(height: 20),
             FilledButton.icon(
-              onPressed: alReintentar,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
+              onPressed: accionBoton,
+              icon: iconoBoton,
+              label: Text(etiquetaBoton),
             ),
           ],
         ),
