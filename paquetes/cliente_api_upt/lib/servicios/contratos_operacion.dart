@@ -21,3 +21,11 @@ abstract interface class ContratoAdministracion {
     int? id,
   });
 }
+
+abstract interface class ContratoPreparacionOffline {
+  Future<Map<String, dynamic>> prepararQrOffline(
+    String tokenAcceso,
+    String identificadorDispositivo,
+    String plataforma,
+  );
+}

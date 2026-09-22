@@ -10,3 +10,8 @@ export const esquemaGenerarCodigoQr = z.object({
 }).strict();
 
 export const esquemaConsultaCodigoQrActual = z.object({}).strict();
+
+export const esquemaPrepararCodigosOffline = z.object({
+  identificador_dispositivo: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  plataforma: z.enum(['ANDROID', 'IOS', 'WEB', 'OTRA']),
+}).strict();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/foundation.dart';
@@ -10,10 +11,14 @@ class ControladorIdentidadQr extends ChangeNotifier {
     required ContratoClienteApi clienteApi,
     required ControladorSesion controladorSesion,
     required ProveedorUbicacion proveedorUbicacion,
+    ContratoPreparacionOffline? clienteOffline,
+    AlmacenQrOffline? almacenQrOffline,
     DateTime Function()? ahora,
   }) : _clienteApi = clienteApi,
        _controladorSesion = controladorSesion,
        _proveedorUbicacion = proveedorUbicacion,
+       _clienteOffline = clienteOffline,
+       _almacenQrOffline = almacenQrOffline,
        _ahora = ahora ?? DateTime.now,
        _revisionSesion = controladorSesion.revisionAutenticacion {
     _controladorSesion.addListener(_alCambiarSesion);
@@ -22,6 +27,9 @@ class ControladorIdentidadQr extends ChangeNotifier {
   final ContratoClienteApi _clienteApi;
   final ControladorSesion _controladorSesion;
   final ProveedorUbicacion _proveedorUbicacion;
+  final ContratoPreparacionOffline? _clienteOffline;
+  final AlmacenQrOffline? _almacenQrOffline;
+  VinculacionQrOffline? _vinculacionOffline;
   final DateTime Function() _ahora;
 
   EstadoCarga<IdentidadDigital> _identidad = const EstadoCarga.inicial();
@@ -46,6 +54,12 @@ class ControladorIdentidadQr extends ChangeNotifier {
   bool get estaBloqueadoPorReintentos => _segundosBloqueoReintento > 0;
   bool get revocando => _revocando;
   bool get rotacionAutomatica => _rotacionAutomatica;
+  bool get habilitadoOffline =>
+      _clienteOffline != null &&
+      _almacenQrOffline != null &&
+      (_controladorSesion.sesion?.usuario.roles.contains('ESTUDIANTE') ??
+          false);
+  bool get mostrandoOffline => _vinculacionOffline != null;
   bool get usaUbicacionSimulada =>
       _proveedorUbicacion is ProveedorUbicacionSimuladaDesarrollo;
   String? get mensajeCodigoQr => _mensajeCodigoQr;
@@ -94,19 +108,18 @@ class ControladorIdentidadQr extends ChangeNotifier {
   void _iniciarBloqueoReintento() {
     _cancelarTemporizadorBloqueo();
     _segundosBloqueoReintento = 10;
-    _temporizadorBloqueoReintento = Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) {
-        if (_segundosBloqueoReintento > 1) {
-          _segundosBloqueoReintento -= 1;
-          notifyListeners();
-        } else {
-          _segundosBloqueoReintento = 0;
-          _cancelarTemporizadorBloqueo();
-          notifyListeners();
-        }
-      },
-    );
+    _temporizadorBloqueoReintento = Timer.periodic(const Duration(seconds: 1), (
+      timer,
+    ) {
+      if (_segundosBloqueoReintento > 1) {
+        _segundosBloqueoReintento -= 1;
+        notifyListeners();
+      } else {
+        _segundosBloqueoReintento = 0;
+        _cancelarTemporizadorBloqueo();
+        notifyListeners();
+      }
+    });
   }
 
   void _cancelarTemporizadorBloqueo() {
@@ -115,6 +128,7 @@ class ControladorIdentidadQr extends ChangeNotifier {
   }
 
   Future<bool> iniciarRotacionAutomatica() async {
+    if (habilitadoOffline) return _iniciarQrOffline();
     _rotacionAutomatica = true;
     final generado = await generarCodigoQr(mantenerRotacion: true);
     if (!generado && !_descartado) {
@@ -122,6 +136,101 @@ class ControladorIdentidadQr extends ChangeNotifier {
       notifyListeners();
     }
     return generado;
+  }
+
+  Future<bool> _iniciarQrOffline() async {
+    final revision = _controladorSesion.revisionAutenticacion;
+    final sesion = _controladorSesion.sesion;
+    if (sesion == null) return false;
+    _cancelarTemporizador();
+    _vinculacionOffline = null;
+    _rotacionAutomatica = true;
+    _codigoQr = const EstadoCarga.cargando();
+    notifyListeners();
+    try {
+      var vinculacion = await _almacenQrOffline!.recuperar(sesion.usuario.id);
+      if (!_solicitudVigente(revision)) return false;
+      final tokenActualVigente =
+          !sesion.accesoRequiereRenovacion(_ahora()) &&
+          !sesion.renovacionVencida(_ahora());
+      if (vinculacion == null || tokenActualVigente) {
+        try {
+          final token = vinculacion == null
+              ? await _controladorSesion.obtenerTokenAcceso()
+              : sesion.tokenAcceso;
+          if (!_solicitudVigente(revision)) return false;
+          final identificador = await _almacenQrOffline
+              .identificadorDispositivo();
+          final datos = await _clienteOffline!.prepararQrOffline(
+            token,
+            identificador,
+            Platform.isAndroid
+                ? 'ANDROID'
+                : Platform.isIOS
+                ? 'IOS'
+                : 'OTRA',
+          );
+          final horaServidor = DateTime.parse(datos['hora_servidor'] as String);
+          vinculacion = VinculacionQrOffline(
+            usuarioId: sesion.usuario.id,
+            dispositivoId: datos['dispositivo_id'] as int,
+            secreto: datos['secreto'] as String,
+            desfaseRelojMs:
+                horaServidor.millisecondsSinceEpoch -
+                _ahora().millisecondsSinceEpoch,
+            periodoSegundos: datos['periodo_segundos'] as int,
+          );
+          if (!_solicitudVigente(revision)) return false;
+          await _almacenQrOffline.guardar(vinculacion);
+        } on ExcepcionApi catch (error) {
+          if (!{
+            'ERROR_CONEXION',
+            'TIEMPO_ESPERA_AGOTADO',
+          }.contains(error.codigo)) {
+            await _almacenQrOffline.limpiar();
+            rethrow;
+          }
+          if (vinculacion == null) rethrow;
+        }
+      }
+      _vinculacionOffline = vinculacion;
+      _mostrarSiguienteQrOffline();
+      return true;
+    } on ExcepcionApi catch (error) {
+      if (!_solicitudVigente(revision)) return false;
+      _codigoQr = EstadoCarga.error(error.mensajeParaUsuario);
+    } catch (_) {
+      if (!_solicitudVigente(revision)) return false;
+      _codigoQr = const EstadoCarga.error(
+        'No fue posible preparar el QR de este dispositivo.',
+      );
+    }
+    _rotacionAutomatica = false;
+    notifyListeners();
+    return false;
+  }
+
+  void _mostrarSiguienteQrOffline() {
+    final vinculacion = _vinculacionOffline;
+    if (vinculacion == null || !_rotacionAutomatica) return;
+    _cancelarTemporizador();
+    final ahora = _ahora();
+    final generado = vinculacion.generar(ahora);
+    _codigoQr = EstadoCarga.completada(
+      CodigoQrTemporal.offline(
+        codigoQr: generado.codigo,
+        emitidaEn: ahora,
+        expiraEn: generado.expiraEn,
+        duracionSegundos: vinculacion.periodoSegundos,
+        otp: generado.otp,
+      ),
+    );
+    _actualizarCuentaRegresiva();
+    _temporizador = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _actualizarCuentaRegresiva(),
+    );
+    notifyListeners();
   }
 
   void detenerRotacionAutomatica() {
@@ -236,6 +345,10 @@ class ControladorIdentidadQr extends ChangeNotifier {
 
   Future<void> _rotarCodigoQr() async {
     if (_descartado || !_rotacionAutomatica || _rotacionEnCurso) return;
+    if (_vinculacionOffline != null) {
+      _mostrarSiguienteQrOffline();
+      return;
+    }
     _rotacionEnCurso = true;
     final generado = await generarCodigoQr(mantenerRotacion: true);
     _rotacionEnCurso = false;
@@ -272,6 +385,7 @@ class ControladorIdentidadQr extends ChangeNotifier {
     _rotacionAutomatica = false;
     _rotacionEnCurso = false;
     _mensajeCodigoQr = null;
+    _vinculacionOffline = null;
   }
 
   void _cancelarTemporizador() {

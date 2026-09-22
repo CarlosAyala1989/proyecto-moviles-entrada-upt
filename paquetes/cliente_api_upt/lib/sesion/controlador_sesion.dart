@@ -5,6 +5,7 @@ import '../servicios/contrato_cliente_api.dart';
 import '../servicios/excepcion_api.dart';
 import '../utilidades/mensajes_usuario.dart';
 import 'almacen_sesion.dart';
+import 'almacen_qr_offline.dart';
 
 enum EstadoSesion {
   restaurando,
@@ -20,15 +21,18 @@ class ControladorSesion extends ChangeNotifier {
     required ContratoClienteApi clienteApi,
     required AlmacenSesion almacenSesion,
     required Set<String> rolesPermitidos,
+    AlmacenQrOffline? almacenQrOffline,
     DateTime Function()? ahora,
   }) : _clienteApi = clienteApi,
        _almacenSesion = almacenSesion,
        _rolesPermitidos = Set.unmodifiable(rolesPermitidos),
+       _almacenQrOffline = almacenQrOffline,
        _ahora = ahora ?? DateTime.now;
 
   final ContratoClienteApi _clienteApi;
   final AlmacenSesion _almacenSesion;
   final Set<String> _rolesPermitidos;
+  final AlmacenQrOffline? _almacenQrOffline;
   final DateTime Function() _ahora;
   Future<void> _colaAlmacen = Future<void>.value();
   Future<void>? _restauracionPendiente;
@@ -77,7 +81,12 @@ class ControladorSesion extends ChangeNotifier {
       recuperada = await _almacenSesion.recuperar();
       if (!_revisionVigente(revision)) return;
       final ahora = _ahora();
-      if (recuperada == null || recuperada.renovacionVencida(ahora)) {
+      if (recuperada == null) {
+        await _descartarSesion(siRevision: revision);
+        return;
+      }
+      if (recuperada.renovacionVencida(ahora)) {
+        if (await _restaurarSoloOffline(recuperada, revision)) return;
         await _descartarSesion(siRevision: revision);
         return;
       }
@@ -107,8 +116,15 @@ class ControladorSesion extends ChangeNotifier {
       }
       _sesion = recuperada;
       _cambiarEstado(EstadoSesion.autenticada);
-    } on ExcepcionApi {
+    } on ExcepcionApi catch (error) {
       if (_revisionVigente(revision)) {
+        if ({
+              'ERROR_CONEXION',
+              'TIEMPO_ESPERA_AGOTADO',
+            }.contains(error.codigo) &&
+            recuperada != null &&
+            await _restaurarSoloOffline(recuperada, revision))
+          return;
         await _descartarSesion(siRevision: revision);
       }
     } catch (_) {
@@ -210,7 +226,9 @@ class ControladorSesion extends ChangeNotifier {
     final revision = _revisionAutenticacion;
     final ahora = _ahora();
     if (actual == null || actual.renovacionVencida(ahora)) {
-      await _descartarSesion(siRevision: revision);
+      if (actual == null || !await _tieneVinculacionOffline(actual)) {
+        await _descartarSesion(siRevision: revision);
+      }
       throw const ExcepcionApi(
         codigo: 'SESION_VENCIDA',
         mensaje: 'La sesión ha vencido. Inicia sesión nuevamente.',
@@ -245,6 +263,7 @@ class ControladorSesion extends ChangeNotifier {
     // Se encola antes de esperar la red para que un login posterior se guarde
     // necesariamente después de esta limpieza.
     final limpieza = _limpiarAlmacen();
+    final limpiezaQr = _almacenQrOffline?.limpiar();
     var cierreRemotoCompletado = actual == null;
     try {
       if (actual != null) {
@@ -255,20 +274,46 @@ class ControladorSesion extends ChangeNotifier {
       // El borrado local basta si el backend no está disponible.
     }
     final almacenamientoLimpio = await limpieza;
+    var qrLimpio = true;
+    try {
+      if (limpiezaQr != null) await limpiezaQr;
+    } catch (_) {
+      qrLimpio = false;
+    }
     if (!_revisionVigente(revision)) return;
 
-    if (!cierreRemotoCompletado && !almacenamientoLimpio && actual != null) {
+    if (!cierreRemotoCompletado &&
+        (!almacenamientoLimpio || !qrLimpio) &&
+        actual != null) {
       _sesion = actual;
       _mensajeError =
           'No pudimos cerrar tu cuenta por completo. Inténtalo nuevamente.';
       _cambiarEstado(EstadoSesion.autenticada);
       return;
     }
-    if (!almacenamientoLimpio) {
+    if (!almacenamientoLimpio || !qrLimpio) {
       _mensajeError =
           'Cerramos tu cuenta, pero quedaron datos pendientes por borrar en este dispositivo.';
     }
     _cambiarEstado(EstadoSesion.noAutenticada);
+  }
+
+  Future<bool> _restaurarSoloOffline(SesionUsuario sesion, int revision) async {
+    if (!await _tieneVinculacionOffline(sesion) ||
+        !_revisionVigente(revision)) {
+      return false;
+    }
+    _sesion = sesion;
+    _cambiarEstado(EstadoSesion.autenticada);
+    return true;
+  }
+
+  Future<bool> _tieneVinculacionOffline(SesionUsuario sesion) async {
+    final almacen = _almacenQrOffline;
+    return almacen != null &&
+        _tieneRolPermitido(sesion) &&
+        sesion.usuario.roles.contains('ESTUDIANTE') &&
+        await almacen.recuperar(sesion.usuario.id) != null;
   }
 
   void limpiarError() {
@@ -310,8 +355,13 @@ class ControladorSesion extends ChangeNotifier {
       _sesion = renovada;
       notifyListeners();
       return renovada.tokenAcceso;
-    } on ExcepcionApi {
-      if (_revisionVigente(revision)) {
+    } on ExcepcionApi catch (error) {
+      if (_revisionVigente(revision) &&
+          (!{
+                'ERROR_CONEXION',
+                'TIEMPO_ESPERA_AGOTADO',
+              }.contains(error.codigo) ||
+              !await _tieneVinculacionOffline(actual))) {
         await _descartarSesion(siRevision: revision);
       }
       rethrow;

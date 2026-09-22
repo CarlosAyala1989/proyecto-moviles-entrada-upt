@@ -82,7 +82,7 @@ function normalizarEstadoActual(credencial) {
   };
 }
 
-export function crearServicioCodigosQr(repositorio) {
+export function crearServicioCodigosQr(repositorio, repositorioOffline) {
   return {
     generar: async ({ usuarioId, sesionId, ubicacion }) => {
       const configuracion = interpretarConfiguracionCodigosQr(
@@ -124,6 +124,20 @@ export function crearServicioCodigosQr(repositorio) {
           },
         },
       };
+    },
+
+    prepararOffline: async ({
+      usuarioId,
+      sesionId,
+      identificador_dispositivo: identificadorDispositivo,
+      plataforma,
+    }) => {
+      return repositorioOffline.preparar({
+        usuarioId,
+        sesionId,
+        identificadorDispositivo,
+        plataforma,
+      });
     },
 
     consultarActual: async (usuarioId) => normalizarEstadoActual(

@@ -17,7 +17,11 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
   @override
   void initState() {
     super.initState();
-    widget.controlador.cargarIdentidad();
+    if (widget.controlador.habilitadoOffline) {
+      widget.controlador.iniciarRotacionAutomatica();
+    } else {
+      widget.controlador.cargarIdentidad();
+    }
   }
 
   @override
@@ -62,6 +66,9 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
         animation: widget.controlador,
         builder: (context, _) {
           final identidad = widget.controlador.identidad;
+          if (widget.controlador.habilitadoOffline) {
+            return _construirEstadoCodigo();
+          }
           if (identidad.fase == FaseCarga.inicial ||
               identidad.fase == FaseCarga.cargando) {
             return const Center(child: CircularProgressIndicator());
@@ -97,7 +104,11 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
       return const _GenerandoCodigoQr(mensaje: 'Anulando el código QR…');
     }
     if (estado.fase == FaseCarga.cargando) {
-      return const _GenerandoCodigoQr();
+      return _GenerandoCodigoQr(
+        mensaje: widget.controlador.habilitadoOffline
+            ? 'Preparando el QR de este dispositivo…'
+            : 'Estamos comprobando tu ubicación y permiso de ingreso…',
+      );
     }
     if (estado.fase == FaseCarga.error) {
       return _MensajeQr(
@@ -121,12 +132,14 @@ class _EstadoPantallaCodigoQr extends State<PantallaCodigoQr> {
         segundosRestantes: widget.controlador.segundosRestantes,
         mensajeError: widget.controlador.mensajeCodigoQr,
         ubicacionSimulada: widget.controlador.usaUbicacionSimulada,
-        alRevocar: _revocar,
+        alRevocar: widget.controlador.mostrandoOffline ? null : _revocar,
+        offline: widget.controlador.mostrandoOffline,
       );
     }
     return _SolicitudCodigoQr(
       alGenerar: widget.controlador.iniciarRotacionAutomatica,
       ubicacionSimulada: widget.controlador.usaUbicacionSimulada,
+      offline: widget.controlador.habilitadoOffline,
     );
   }
 }
@@ -135,10 +148,12 @@ class _SolicitudCodigoQr extends StatelessWidget {
   const _SolicitudCodigoQr({
     required this.alGenerar,
     required this.ubicacionSimulada,
+    this.offline = false,
   });
 
   final VoidCallback alGenerar;
   final bool ubicacionSimulada;
+  final bool offline;
 
   @override
   Widget build(BuildContext context) {
@@ -162,8 +177,10 @@ class _SolicitudCodigoQr extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Al continuar, usaremos tu ubicación para comprobar que estás cerca de una puerta habilitada.',
+              Text(
+                offline
+                    ? 'Conéctate una vez para vincular este dispositivo. Después el código funcionará sin internet en cualquier puerta activa.'
+                    : 'Al continuar, usaremos tu ubicación para comprobar que estás cerca de una puerta habilitada.',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -186,8 +203,12 @@ class _SolicitudCodigoQr extends StatelessWidget {
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: alGenerar,
-                icon: const Icon(Icons.my_location),
-                label: const Text('Usar mi ubicación y generar'),
+                icon: Icon(offline ? Icons.link : Icons.my_location),
+                label: Text(
+                  offline
+                      ? 'Vincular dispositivo y generar'
+                      : 'Usar mi ubicación y generar',
+                ),
               ),
             ],
           ),
@@ -229,13 +250,15 @@ class _CodigoQrVigente extends StatelessWidget {
     required this.mensajeError,
     required this.ubicacionSimulada,
     required this.alRevocar,
+    this.offline = false,
   });
 
   final CodigoQrTemporal codigo;
   final int segundosRestantes;
   final String? mensajeError;
   final bool ubicacionSimulada;
-  final VoidCallback alRevocar;
+  final VoidCallback? alRevocar;
+  final bool offline;
 
   @override
   Widget build(BuildContext context) {
@@ -284,6 +307,30 @@ class _CodigoQrVigente extends StatelessWidget {
             ),
           ),
         ),
+        if (codigo.otp case final otp?) ...[
+          const SizedBox(height: 16),
+          Semantics(
+            liveRegion: true,
+            label: 'OTP actual $otp',
+            child: Column(
+              children: [
+                const Text('OTP actual'),
+                const SizedBox(height: 4),
+                Text(
+                  otp,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 6,
+                  ),
+                ),
+                const Text(
+                  'Este mismo OTP está firmado dentro del QR.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 18),
         Semantics(
           liveRegion: urgente,
@@ -304,9 +351,15 @@ class _CodigoQrVigente extends StatelessWidget {
         const SizedBox(height: 16),
         Card(
           child: ListTile(
-            leading: const Icon(Icons.location_on_outlined),
+            leading: Icon(
+              offline ? Icons.devices_outlined : Icons.location_on_outlined,
+            ),
             title: Text(codigo.puntoAccesoNombre),
-            subtitle: Text('Punto ${codigo.puntoAccesoCodigo}'),
+            subtitle: Text(
+              offline
+                  ? 'QR del dispositivo; el guardia valida en línea.'
+                  : 'Punto ${codigo.puntoAccesoCodigo}',
+            ),
           ),
         ),
         if (ubicacionSimulada) ...[
@@ -322,8 +375,10 @@ class _CodigoQrVigente extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
-        const Text(
-          'No compartas capturas. Al escanearlo comprobaremos tu identidad, la puerta y las ubicaciones. Cada código sirve una sola vez.',
+        Text(
+          offline
+              ? 'No compartas capturas. El guardia debe tener internet para comprobar tu identidad, su puerta y el código. Cada código sirve una sola vez.'
+              : 'No compartas capturas. Al escanearlo comprobaremos tu identidad, la puerta y las ubicaciones. Cada código sirve una sola vez.',
           textAlign: TextAlign.center,
         ),
         if (mensajeError != null) ...[
@@ -341,11 +396,12 @@ class _CodigoQrVigente extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: alRevocar,
-          icon: const Icon(Icons.cancel_outlined),
-          label: const Text('Anular código'),
-        ),
+        if (alRevocar != null)
+          OutlinedButton.icon(
+            onPressed: alRevocar,
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Anular código'),
+          ),
       ],
     );
   }

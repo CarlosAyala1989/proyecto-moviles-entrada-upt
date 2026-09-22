@@ -65,6 +65,10 @@ String mensajeErrorParaUsuario(String codigo) {
         'No encontramos una puerta habilitada cerca de ti. Pide ayuda al personal de seguridad.',
     'PUNTO_ACCESO_NO_ENCONTRADO':
         'Este equipo no tiene una puerta válida asignada. Pide ayuda al responsable del sistema.',
+    'IDENTIFICADOR_INSTITUCIONAL_DUPLICADO':
+        'Ese usuario ya está registrado. Escribe otro usuario o edita la cuenta existente.',
+    'ROL_INVALIDO':
+        'No se pudo habilitar el rol de seguridad. Pide ayuda al responsable del sistema.',
     'CAPTCHA_EXPIRADO':
         'La imagen ya venció. Carga una nueva e ingresa el número que aparece.',
     'VERIFICACION_INTRANET_EXPIRADA':
@@ -94,6 +98,8 @@ String mensajeErrorParaUsuario(String codigo) {
         'Sólo puedes operar en la puerta asignada por el administrador.',
     'GUARDIA_NO_ENCONTRADO':
         'Esta cuenta no corresponde a un guardia. Revisa el usuario.',
+    'DISPOSITIVO_VINCULADO_A_OTRA_CUENTA':
+        'Este dispositivo ya está vinculado a otra cuenta. Usa el dispositivo de tu cuenta.',
     'GOOGLE_OAUTH_NO_CONFIGURADO':
         'El acceso con Google institucional aún no está disponible. Pide ayuda al responsable del sistema.',
     'GOOGLE_OAUTH_CANCELADO':
@@ -159,6 +165,10 @@ String mensajeDecisionIngresoParaUsuario(String motivo) {
         'Este código fue generado para otra puerta. No permitas el ingreso aquí.',
     'UBICACION_ESCANEO_FUERA_DE_ZONA':
         'Este equipo no se encuentra dentro de la zona asignada a la puerta.',
+    'CODIGO_OFFLINE_NO_VIGENTE':
+        'El reloj o el código del estudiante no corresponde al momento actual.',
+    'DISPOSITIVO_NO_VINCULADO':
+        'El dispositivo que preparó este código ya no está vinculado.',
   };
   return mensajes[motivo] ??
       'No pudimos confirmar el ingreso. No permitas el acceso y vuelve a intentarlo.';

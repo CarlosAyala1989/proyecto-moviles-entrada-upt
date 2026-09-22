@@ -30,4 +30,11 @@ void main() {
     expect(mensaje, isNot(contains('ERROR_INTERNO_DESCONOCIDO')));
     expect(mensaje, contains('Inténtalo nuevamente'));
   });
+
+  test('explica que debe editarse un guardia cuyo usuario ya existe', () {
+    expect(
+      mensajeErrorParaUsuario('IDENTIFICADOR_INSTITUCIONAL_DUPLICADO'),
+      'Ese usuario ya está registrado. Escribe otro usuario o edita la cuenta existente.',
+    );
+  });
 }

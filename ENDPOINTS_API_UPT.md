@@ -1,6 +1,6 @@
 # Catálogo completo de endpoints — API Entrada UPT
 
-Este documento describe los **36 endpoints HTTP publicados** por el backend en
+Este documento describe los **37 endpoints HTTP publicados** por el backend en
 el estado actual del proyecto. Incluye los datos que el cliente envía, la
 respuesta exitosa y el rol necesario.
 
@@ -422,6 +422,35 @@ autorizado, verificado y tener al menos uno de los roles `ESTUDIANTE`,
 - Se envía: sólo Bearer.
 - Se recibe: `204 No Content`, sin cuerpo. Revoca las credenciales pendientes
   del usuario.
+
+### 5.4 `POST /api/codigos-qr/preparar-offline`
+
+- Autenticación: Bearer de estudiante con identidad verificada.
+- Se envía un identificador aleatorio de 32 bytes en base64url, generado y
+  guardado en el almacenamiento seguro del dispositivo. No se envía ubicación.
+
+```json
+{
+  "identificador_dispositivo": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "plataforma": "ANDROID"
+}
+```
+
+- Se recibe `201 Created` con `dispositivo_id`, `secreto` (32 bytes en
+  base64url), `hora_servidor` y `periodo_segundos: 15`. El secreto sólo se
+  entrega durante la vinculación; la API lo cifra en la base. Una nueva
+  vinculación rota el secreto y revoca los demás dispositivos de la cuenta.
+- El estudiante genera localmente
+  `upt_offline_v2.<dispositivo_id>.<paso_tiempo>.<otp>.<firma>`. El paso es el
+  tiempo Unix dividido entre 15 segundos. `otp` son seis dígitos derivados
+  mediante truncamiento dinámico del HMAC-SHA256 y `firma` conserva el HMAC
+  completo. El número mostrado y el contenido del QR cambian juntos. La
+  vinculación sigue activa mientras no se revoque; no requiere descargar
+  códigos por anticipado. Cada paso sólo puede usarse una vez. Durante una
+  actualización gradual, la API también acepta el formato anterior `v1`.
+- El guardia envía ese QR a `POST /api/ingresos/validar` como cualquier otro.
+  La API verifica firma, tiempo, dispositivo, usuario, rol, puerta activa y
+  ubicación del guardia. El guardia necesita internet en todo momento.
 
 ## 6. Validación e historial del personal de seguridad
 

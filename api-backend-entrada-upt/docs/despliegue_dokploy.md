@@ -23,7 +23,17 @@ DB_USER=upt_app
 DB_PASSWORD=COPIAR_PASSWORD_DE_INTERNAL_CREDENTIALS
 DB_CONNECTION_LIMIT=10
 DB_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+CLAVE_QR_OFFLINE=GENERAR_32_BYTES_BASE64URL_Y_MANTENER_ESTA_CLAVE
 ```
+
+Genera `CLAVE_QR_OFFLINE` una sola vez con
+`node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`.
+Pega el resultado en **Environment** de la API y conserva ese valor entre
+despliegues y réplicas. No lo guardes en Git. La API cifra con esta clave los
+secretos individuales de los dispositivos. Si cambias la clave, revoca y
+vincula nuevamente todos los dispositivos antes de aceptar códigos offline.
+Sin la clave válida, la vinculación offline devuelve un error y el QR existente
+continúa funcionando por su ruta anterior.
 
 El nombre del host, base y usuario corresponden a la imagen proporcionada. Copia el campo **Password** del usuario `upt_app`, no **Root Password**. Se dejó además un archivo privado `.env.dokploy` en el directorio del backend con los valores completos para copiar al editor de Dokploy. Ese archivo está ignorado por Git y Docker; Dokploy recibe la configuración desde su editor **Environment**, no desde ese archivo.
 
@@ -58,7 +68,7 @@ Abre una terminal del contenedor de la **API** y ejecuta en `/app`:
 npm run verificar:bd
 ```
 
-El comando es de solo lectura: comprueba conexión, nombre de la base, versión del servidor y las 14 tablas requeridas. No imprime contraseñas ni cambia filas. Debe mostrar `Conexión correcta` y `Las 14 tablas requeridas están disponibles`.
+El comando es de solo lectura: comprueba conexión, nombre de la base, versión del servidor y las 15 tablas requeridas. No imprime contraseñas ni cambia filas. Debe mostrar `Conexión correcta` y `Las 15 tablas requeridas están disponibles`.
 
 Después consulta desde el mismo contenedor:
 
@@ -74,8 +84,8 @@ La base ya contiene la estructura importada, por lo que no es necesario volver a
 
 El arranque `node src/server.js` ejecuta las migraciones antes de abrir el
 puerto HTTP. Funciona con el Dockerfile existente, `npm start` y `npm run dev`.
-No requiere un segundo webhook, un comando de build adicional ni variables
-nuevas en Dokploy. Las migraciones se ejecutan dentro del contenedor que
+No requiere un segundo webhook ni un comando de build adicional. La función
+offline sí necesita `CLAVE_QR_OFFLINE`. Las migraciones se ejecutan dentro del contenedor que
 arranca, con las credenciales internas `DB_*`, nunca durante `docker build`.
 
 El flujo es **push a main → despliegue de la API → migraciones pendientes →
@@ -94,7 +104,7 @@ espera hasta 60 segundos y luego revisa de nuevo qué archivos quedan pendientes
 ### Cómo introducir un cambio de esquema
 
 1. Crea un archivo nuevo en `api-backend-entrada-upt/migraciones/`, con el
-   siguiente número: después de `010_...sql`, el siguiente será `011_...sql`.
+   siguiente número libre. No reutilices `012_credenciales_offline_dispositivo.sql`.
    No edites ni renombres las migraciones que ya se aplicaron.
 2. Escribe SQL incremental compatible con MySQL 8 y MariaDB, por ejemplo un
    `ALTER TABLE` para añadir una columna o un `CREATE TABLE` para una tabla nueva.
@@ -104,7 +114,7 @@ espera hasta 60 segundos y luego revisa de nuevo qué archivos quedan pendientes
    la API y su migración. Un cambio al código de un repositorio JavaScript
    por sí solo no genera automáticamente un cambio SQL.
 4. Al hacer push, Dokploy reconstruye la API y el arranque aplica ese archivo.
-   En los logs verás `Migración aplicada: 011_...sql`, después
+   En los logs verás `Migración aplicada: 012_credenciales_offline_dispositivo.sql`, después
    `Migraciones al día (1 nuevas).` y finalmente `API disponible...`.
 
 Para activar el mecanismo por primera vez, sube los cambios del ejecutor y

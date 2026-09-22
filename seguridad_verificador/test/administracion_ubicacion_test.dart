@@ -193,7 +193,7 @@ void main() {
       );
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Usuario'),
-        'GUARDIA-01',
+        'guardia-01',
       );
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Contraseña'),
@@ -213,6 +213,44 @@ void main() {
         'punto_acceso_id': 1,
         'activo': true,
       });
+    },
+  );
+
+  testWidgets(
+    'formulario explica el formato del usuario antes de enviar el guardia',
+    (tester) async {
+      final cliente = ClienteOperativoFalso(esAdmin: true);
+      await montar(tester, cliente);
+      await tester.tap(find.text('Agregar guardia'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nombres'),
+        'Juan',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Apellidos'),
+        'Pérez',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Usuario'),
+        'GUARDIA CON ESPACIOS',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Contraseña'),
+        'Guardia-Seguro!2026',
+      );
+      await tester.tap(find.text('Puerta asignada'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Puerta principal').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Usa solo letras, números, punto, guion o guion bajo.'),
+        findsOneWidget,
+      );
+      expect(cliente.guardiaGuardado, isNull);
     },
   );
 }

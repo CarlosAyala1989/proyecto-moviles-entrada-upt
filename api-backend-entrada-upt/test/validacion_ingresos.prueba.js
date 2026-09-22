@@ -2,8 +2,13 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import { crearAplicacion } from '../src/app.js';
 import { grupoConexiones } from '../src/config/database.js';
+import {
+  calcularOtpOffline,
+  firmarPasoOffline,
+} from '../src/seguridad/codigos_qr_offline.js';
 
 const contrasena = 'Validacion-Ingreso-Segura!2026';
 const codigoPuntoPrincipal = 'PRUEBA-INGRESO-H7';
@@ -81,6 +86,14 @@ async function eliminarDatosPrueba() {
 
   if (ids.length > 0) {
     const marcadores = ids.map(() => '?').join(', ');
+    await grupoConexiones.query(
+      `DELETE usos_codigos_offline FROM usos_codigos_offline
+       JOIN dispositivos ON dispositivos.id = usos_codigos_offline.dispositivo_id
+       WHERE dispositivos.usuario_id IN (${marcadores})`, ids,
+    );
+    await grupoConexiones.query(
+      `DELETE FROM dispositivos WHERE usuario_id IN (${marcadores})`, ids,
+    );
     await grupoConexiones.query(
       `DELETE FROM registros_auditoria WHERE usuario_actor_id IN (${marcadores})`,
       ids,
@@ -209,6 +222,7 @@ function validarIngreso(tokenSeguridad, codigoQr, {
 }
 
 before(async () => {
+  process.env.CLAVE_QR_OFFLINE = randomBytes(32).toString('base64url');
   await eliminarDatosPrueba();
   await crearDatosPrueba();
 });
@@ -219,6 +233,68 @@ after(async () => {
 });
 
 describe('Validación de ingresos mediante códigos QR', { concurrency: false }, () => {
+  it('acepta OTP de un dispositivo en cualquier puerta y revoca al vincular otro o cerrar sesión', async () => {
+    const tokenPortador = await iniciarSesion('PRUEBA-INGRESO-PORTADOR');
+    const tokenSeguridad = await iniciarSesion('PRUEBA-INGRESO-SEGURIDAD');
+    const preparar = (identificador) => request(aplicacion)
+      .post('/api/codigos-qr/preparar-offline')
+      .set('authorization', `Bearer ${tokenPortador}`)
+      .send({ identificador_dispositivo: identificador, plataforma: 'ANDROID' });
+    const primero = (await preparar(randomBytes(32).toString('base64url')).expect(201)).body.datos;
+    const [guardado] = await grupoConexiones.query(
+      'SELECT secreto_qr_cifrado FROM dispositivos WHERE id = ?', [primero.dispositivo_id],
+    );
+    assert.ok(guardado.secreto_qr_cifrado);
+    assert.ok(!guardado.secreto_qr_cifrado.includes(primero.secreto));
+    const paso = Math.floor(Date.now() / 15000);
+    const codigo = (vinculo, instante) => {
+      const secreto = Buffer.from(vinculo.secreto, 'base64url');
+      const otp = calcularOtpOffline(secreto, vinculo.dispositivo_id, instante);
+      const firma = firmarPasoOffline(secreto, vinculo.dispositivo_id, instante);
+      return `upt_offline_v2.${vinculo.dispositivo_id}.${instante}.${otp}.${firma}`;
+    };
+    const original = codigo(primero, paso);
+    const [prefijo, firma] = [original.slice(0, original.lastIndexOf('.')), original.slice(original.lastIndexOf('.') + 1)];
+    const alterado = `${prefijo}.${firma.startsWith('A') ? 'B' : 'A'}${firma.slice(1)}`;
+    const firmaInvalida = await validarIngreso(tokenSeguridad, alterado).expect(200);
+    assert.equal(firmaInvalida.body.datos.motivo, 'INTEGRIDAD_CREDENCIAL_INVALIDA');
+    const partesOtp = original.split('.');
+    partesOtp[3] = partesOtp[3] === '000000' ? '000001' : '000000';
+    const otpInvalido = await validarIngreso(tokenSeguridad, partesOtp.join('.')).expect(200);
+    assert.equal(otpInvalido.body.datos.motivo, 'INTEGRIDAD_CREDENCIAL_INVALIDA');
+    const futuro = await validarIngreso(tokenSeguridad, codigo(primero, paso + 20)).expect(200);
+    assert.equal(futuro.body.datos.motivo, 'CODIGO_OFFLINE_NO_VIGENTE');
+    const autorizado = await validarIngreso(tokenSeguridad, codigo(primero, paso)).expect(200);
+    assert.equal(autorizado.body.datos.resultado, 'AUTORIZADO');
+    const repetido = await validarIngreso(tokenSeguridad, codigo(primero, paso)).expect(200);
+    assert.equal(repetido.body.datos.motivo, 'CREDENCIAL_YA_UTILIZADA');
+    const siguiente = await validarIngreso(tokenSeguridad, codigo(primero, paso + 1)).expect(200);
+    assert.equal(siguiente.body.datos.resultado, 'AUTORIZADO');
+
+    const segundo = (await preparar(randomBytes(32).toString('base64url')).expect(201)).body.datos;
+    const anterior = await validarIngreso(tokenSeguridad, codigo(primero, paso + 1)).expect(200);
+    assert.equal(anterior.body.datos.motivo, 'DISPOSITIVO_NO_VINCULADO');
+    await grupoConexiones.query(
+      `UPDATE asignaciones_seguridad SET punto_acceso_id =
+       (SELECT id FROM puntos_acceso WHERE codigo = ?)
+       WHERE usuario_id = ?`,
+      [codigoPuntoAlterno, idsUsuarios.get('PRUEBA-INGRESO-SEGURIDAD')],
+    );
+    const alterna = await validarIngreso(tokenSeguridad, codigo(segundo, paso + 1), {
+      puntoAccesoCodigo: codigoPuntoAlterno, ubicacion: ubicacionValida(10.0005),
+    }).expect(200);
+    assert.equal(alterna.body.datos.resultado, 'AUTORIZADO');
+    await grupoConexiones.query(
+      `UPDATE asignaciones_seguridad SET punto_acceso_id =
+       (SELECT id FROM puntos_acceso WHERE codigo = ?)
+       WHERE usuario_id = ?`,
+      [codigoPuntoPrincipal, idsUsuarios.get('PRUEBA-INGRESO-SEGURIDAD')],
+    );
+    await request(aplicacion).post('/api/autenticacion/cerrar-sesion')
+      .set('authorization', `Bearer ${tokenPortador}`).expect(204);
+    const revocado = await validarIngreso(tokenSeguridad, codigo(segundo, paso)).expect(200);
+    assert.equal(revocado.body.datos.motivo, 'DISPOSITIVO_NO_VINCULADO');
+  });
   it('exige autenticación y el rol SEGURIDAD', async () => {
     const { codigoQr } = await emitirCodigoQr();
     const sinAutenticacion = await request(aplicacion)

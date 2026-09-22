@@ -3,6 +3,7 @@ import {
   validarMomentoYPrecision,
 } from '../../codigos_qr/servicios/codigos_qr.servicio.js';
 import { interpretarCodigoQr } from '../../../seguridad/codigos_qr.js';
+import { interpretarCodigoOffline } from '../../../seguridad/codigos_qr_offline.js';
 import { comprobarUbicacionSeguridad } from '../../seguridad_operativa/seguridad_operativa.js';
 
 function normalizarResultado(resultado) {
@@ -30,7 +31,13 @@ export function crearServicioIngresos(repositorio) {
       );
       validarMomentoYPrecision(ubicacion, configuracion);
 
-      const resultado = await repositorio.validar({
+      const codigoOffline = interpretarCodigoOffline(codigoQr);
+      const resultado = await (codigoOffline ? repositorio.validarOffline({
+        codigo: { ...codigoOffline, huellaToken: interpretarCodigoQr(codigoQr).huellaToken },
+        puntoAccesoCodigo,
+        ubicacion: { ...ubicacion, obtenida_en: new Date(ubicacion.obtenida_en) },
+        usuarioSeguridadId,
+      }) : repositorio.validar({
         codigo: interpretarCodigoQr(codigoQr),
         puntoAccesoCodigo,
         ubicacion: {
@@ -39,7 +46,7 @@ export function crearServicioIngresos(repositorio) {
         },
         usuarioSeguridadId,
         unSoloUso: configuracion.unSoloUso,
-      });
+      }));
 
       return normalizarResultado(resultado);
     },

@@ -31,13 +31,13 @@ Future<void> main() async {
     );
     return;
   }
-  final clienteApi = ClienteApi(
-    tiempoEspera: const Duration(seconds: 3),
-  );
+  final clienteApi = ClienteApi(tiempoEspera: const Duration(seconds: 3));
+  final almacenQrOffline = AlmacenQrOffline();
   final controladorSesion = ControladorSesion(
     clienteApi: clienteApi,
     almacenSesion: AlmacenSesionSegura(),
     rolesPermitidos: const {'ESTUDIANTE', 'DOCENTE', 'TRABAJADOR'},
+    almacenQrOffline: almacenQrOffline,
   );
   await controladorSesion.restaurar();
   final ProveedorUbicacion proveedorUbicacion =
@@ -50,6 +50,8 @@ Future<void> main() async {
     clienteApi: clienteApi,
     controladorSesion: controladorSesion,
     proveedorUbicacion: proveedorUbicacion,
+    clienteOffline: clienteApi,
+    almacenQrOffline: almacenQrOffline,
   );
   final controladorVerificacionIntranet = ControladorVerificacionIntranet(
     clienteApi: clienteApi,

@@ -31,7 +31,7 @@ npm run dev
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
 | Varios | `/api/autenticacion/*` | Inicio, renovación, consulta y cierre de sesión. |
 | `GET` | `/api/identidad-digital` | Identidad propia obtenida desde la sesión. |
-| Varios | `/api/codigos-qr/*` | Generación, estado y revocación del QR temporal. |
+| Varios | `/api/codigos-qr/*` | QR temporal en línea y vinculación del estudiante para OTP sin conexión. |
 | `POST` | `/api/ingresos/validar` | Decisión de acceso reservada al rol `SEGURIDAD`. |
 | `GET` | `/api/ingresos/recientes` | Historial reciente del operador autenticado. |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |

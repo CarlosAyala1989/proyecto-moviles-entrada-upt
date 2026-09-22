@@ -67,7 +67,7 @@ class PantallaEscaner extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.fromLTRB(20, 14, 20, 10),
           child: Text(
-            'Escanea el código que aparece ahora en la pantalla del estudiante. Cambia cada 15 segundos.',
+            'Escanea el código actual del estudiante. Este equipo necesita internet para validarlo con la API en cada ingreso.',
             textAlign: TextAlign.center,
           ),
         ),

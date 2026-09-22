@@ -23,7 +23,8 @@ class ClienteApi
     implements
         ContratoClienteApi,
         ContratoControlSeguridad,
-        ContratoAdministracion {
+        ContratoAdministracion,
+        ContratoPreparacionOffline {
   ClienteApi({
     String urlBase = ConfiguracionApi.urlBase,
     http.Client? clienteHttp,
@@ -245,6 +246,23 @@ class ClienteApi
       tokenAcceso: tokenAcceso,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> prepararQrOffline(
+    String tokenAcceso,
+    String identificadorDispositivo,
+    String plataforma,
+  ) async => _datos(
+    await _solicitar(
+      metodo: 'POST',
+      ruta: '/codigos-qr/preparar-offline',
+      tokenAcceso: tokenAcceso,
+      cuerpo: {
+        'identificador_dispositivo': identificadorDispositivo,
+        'plataforma': plataforma,
+      },
+    ),
+  );
 
   @override
   Future<ResultadoValidacionIngreso> validarIngreso({

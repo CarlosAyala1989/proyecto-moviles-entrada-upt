@@ -266,14 +266,30 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
         if (secreto && widget.actual != null && (valor ?? '').isEmpty) {
           return null;
         }
-        if ((valor ?? '').trim().isEmpty) return 'Completa este campo.';
+        final texto = (valor ?? '').trim();
+        if (texto.isEmpty) return 'Completa este campo.';
+        if (clave == 'usuario') {
+          if (texto.length < 3 || texto.length > 30) {
+            return 'Usa entre 3 y 30 caracteres.';
+          }
+          if (!RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(texto)) {
+            return 'Usa solo letras, números, punto, guion o guion bajo.';
+          }
+        }
+        if (clave == 'nombres' && texto.length > 100) {
+          return 'Los nombres pueden tener hasta 100 caracteres.';
+        }
+        if (clave == 'apellidos' && texto.length > 150) {
+          return 'Los apellidos pueden tener hasta 150 caracteres.';
+        }
         if (secreto &&
             (valor!.length < 14 ||
+                valor.length > 128 ||
                 !RegExp(r'[a-z]').hasMatch(valor) ||
                 !RegExp(r'[A-Z]').hasMatch(valor) ||
                 !RegExp(r'[0-9]').hasMatch(valor) ||
                 !RegExp(r'[^A-Za-z0-9]').hasMatch(valor))) {
-          return 'Usa 14 caracteres o más, mayúsculas, minúsculas, número y símbolo.';
+          return 'Usa de 14 a 128 caracteres, mayúsculas, minúsculas, número y símbolo.';
         }
         if (numero) {
           final n = double.tryParse(valor!.trim());
@@ -308,7 +324,9 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
           ? double.parse(campo.value.text.trim())
           : (campo.key == 'contrasena'
                 ? campo.value.text
-                : campo.value.text.trim());
+                : (campo.key == 'usuario'
+                      ? campo.value.text.trim().toUpperCase()
+                      : campo.value.text.trim()));
     }
     if (widget.puerta) {
       datos['estado'] = _activo ? 'ACTIVO' : 'INACTIVO';

@@ -21,6 +21,7 @@ describe('Modelo de datos', () => {
       'registros_auditoria',
       'roles',
       'sesiones',
+      'usos_codigos_offline',
       'usuarios',
       'usuarios_roles',
     ];

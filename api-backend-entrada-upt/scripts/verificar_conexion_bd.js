@@ -14,6 +14,7 @@ const tablasRequeridas = [
   'registros_auditoria',
   'roles',
   'sesiones',
+  'usos_codigos_offline',
   'usuarios',
   'usuarios_roles',
 ];
@@ -32,7 +33,7 @@ try {
     console.error(`Faltan tablas requeridas: ${faltantes.join(', ')}`);
     process.exitCode = 1;
   } else {
-    console.log('Las 13 tablas requeridas están disponibles.');
+    console.log('Las 15 tablas requeridas están disponibles.');
   }
 } catch (error) {
   const codigo = error.cause?.code ?? error.code ?? 'ERROR_CONEXION';

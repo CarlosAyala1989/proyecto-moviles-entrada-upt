@@ -427,6 +427,11 @@ export class RepositorioAutenticacionMariaDb {
         [sesionId],
       );
       await conexion.query(
+        `UPDATE dispositivos SET estado = 'REVOCADO', secreto_qr_cifrado = NULL
+         WHERE usuario_id = ? AND secreto_qr_cifrado IS NOT NULL`,
+        [usuarioId],
+      );
+      await conexion.query(
         `INSERT INTO registros_auditoria
           (usuario_actor_id, accion, entidad, entidad_id)
          VALUES (?, 'SESION_CERRADA', 'SESION', ?)`,

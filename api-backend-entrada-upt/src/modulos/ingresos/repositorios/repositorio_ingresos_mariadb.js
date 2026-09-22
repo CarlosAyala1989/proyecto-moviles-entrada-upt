@@ -1,6 +1,11 @@
 import { grupoConexiones } from '../../../config/database.js';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
 import { compararHashes } from '../../../seguridad/codigos_qr.js';
+import {
+  descifrarSecretoOffline,
+  duracionPasoOfflineSegundos,
+  verificarFirmaOffline,
+} from '../../../seguridad/codigos_qr_offline.js';
 
 const clavesConfiguracion = [
   'DURACION_QR_SEGUNDOS',
@@ -25,6 +30,8 @@ const mensajesDecision = {
   PUNTO_ACCESO_INACTIVO: 'Esta puerta no está habilitada para comprobar ingresos.',
   PUNTO_ACCESO_NO_COINCIDE: 'Este código fue generado para otra puerta.',
   UBICACION_ESCANEO_FUERA_DE_ZONA: 'Este equipo está fuera de la zona asignada a la puerta.',
+  DISPOSITIVO_NO_VINCULADO: 'El dispositivo que preparó este código ya no está vinculado.',
+  CODIGO_OFFLINE_NO_VIGENTE: 'El código del dispositivo no corresponde al momento actual.',
 };
 
 async function consultarRoles(conexion, usuarioId) {
@@ -145,16 +152,19 @@ async function registrarDecision(conexion, {
       puntoAcceso.distanciaMetros,
     ],
   );
-  const [fila] = await conexion.query(
+  const [filaRegistrada] = await conexion.query(
     'SELECT registrado_en FROM registros_acceso WHERE id = ?',
     [registro.insertId],
   );
+  const [reloj] = filaRegistrada
+    ? [filaRegistrada]
+    : await conexion.query('SELECT CURRENT_TIMESTAMP(3) AS registrado_en');
 
   return {
     resultado,
     motivo,
     mensaje: mensajesDecision[motivo],
-    registradoEn: fila.registrado_en,
+    registradoEn: reloj.registrado_en,
     puntoAcceso: {
       codigo: puntoAcceso.codigo,
       nombre: puntoAcceso.nombre,
@@ -195,6 +205,89 @@ export class RepositorioIngresosMariaDb {
       clavesConfiguracion,
     );
     return Object.fromEntries(filas.map(({ clave, valor }) => [clave, valor]));
+  }
+
+  async validarOffline({ codigo, puntoAccesoCodigo, ubicacion, usuarioSeguridadId }) {
+    const conexion = await grupoConexiones.getConnection();
+    try {
+      await conexion.beginTransaction();
+      await bloquearPersonalSeguridad(conexion, usuarioSeguridadId);
+      const [referencia] = await conexion.query(
+        'SELECT usuario_id FROM dispositivos WHERE id = ?', [codigo.dispositivoId],
+      );
+      const [usuario] = referencia ? await conexion.query(
+        `SELECT usuarios.id, usuarios.codigo_institucional, usuarios.nombres,
+                usuarios.apellidos, COALESCE(NULLIF(usuarios.nombre_institucional, ''),
+                CONCAT_WS(' ', usuarios.nombres, usuarios.apellidos)) AS nombre_completo,
+                usuarios.foto_url, usuarios.estado, usuarios.estado_autorizacion,
+                usuarios.identidad_verificada, perfiles_academicos.escuela,
+                perfiles_academicos.estado_academico
+         FROM usuarios LEFT JOIN perfiles_academicos
+         ON perfiles_academicos.usuario_id = usuarios.id
+         WHERE usuarios.id = ? FOR UPDATE`, [referencia.usuario_id],
+      ) : [null];
+      const [dispositivo] = usuario ? await conexion.query(
+        `SELECT usuario_id, estado, secreto_qr_cifrado FROM dispositivos
+         WHERE id = ? FOR UPDATE`, [codigo.dispositivoId],
+      ) : [null];
+      const puntoAcceso = await seleccionarPuntoAcceso(conexion, puntoAccesoCodigo, ubicacion);
+      const datos = {
+        conexion, usuarioId: usuario?.id, credencialId: null, puntoAcceso,
+        usuarioSeguridadId, codigo, ubicacion,
+      };
+      const denegar = async (motivo) => {
+        const decision = await decisionDenegada(datos, motivo);
+        await conexion.commit();
+        return decision;
+      };
+      if (puntoAcceso.estado !== 'ACTIVO') return denegar('PUNTO_ACCESO_INACTIVO');
+      if (puntoAcceso.distanciaMetros > puntoAcceso.radioPermitidoMetros) {
+        return denegar('UBICACION_ESCANEO_FUERA_DE_ZONA');
+      }
+      if (!dispositivo || dispositivo.estado !== 'ACTIVO' || !dispositivo.secreto_qr_cifrado
+          || dispositivo.usuario_id !== usuario.id) return denegar('DISPOSITIVO_NO_VINCULADO');
+      if (usuario.estado !== 'ACTIVO' || usuario.estado_autorizacion !== 'AUTORIZADO') {
+        return denegar('USUARIO_NO_HABILITADO');
+      }
+      if (!usuario.identidad_verificada) return denegar('IDENTIDAD_NO_VERIFICADA');
+      const roles = await consultarRoles(conexion, usuario.id);
+      const rolesValidos = roles.filter((rol) => rolesPortadores.includes(rol));
+      if (rolesValidos.length === 0) return denegar('ROL_PORTADOR_NO_HABILITADO');
+      const [reloj] = await conexion.query('SELECT CURRENT_TIMESTAMP(3) AS ahora');
+      const pasoActual = Math.floor(reloj.ahora.getTime() / (duracionPasoOfflineSegundos * 1000));
+      if (Math.abs(codigo.pasoTiempo - pasoActual) > 1) return denegar('CODIGO_OFFLINE_NO_VIGENTE');
+      if (!verificarFirmaOffline(codigo, descifrarSecretoOffline(dispositivo.secreto_qr_cifrado))) {
+        return denegar('INTEGRIDAD_CREDENCIAL_INVALIDA');
+      }
+      const [uso] = await conexion.query(
+        `SELECT id FROM usos_codigos_offline WHERE dispositivo_id = ? AND paso_tiempo = ?`,
+        [codigo.dispositivoId, codigo.pasoTiempo],
+      );
+      if (uso) return denegar('CREDENCIAL_YA_UTILIZADA');
+      const insercion = await conexion.query(
+        `INSERT IGNORE INTO usos_codigos_offline (dispositivo_id, paso_tiempo, punto_acceso_id)
+         VALUES (?, ?, ?)`, [codigo.dispositivoId, codigo.pasoTiempo, puntoAcceso.id],
+      );
+      if (insercion.affectedRows !== 1) return denegar('CREDENCIAL_YA_UTILIZADA');
+      const decision = await registrarDecision(conexion, {
+        ...datos, resultado: 'AUTORIZADO', motivo: 'ACCESO_AUTORIZADO',
+        identidad: {
+          foto_url: usuario.foto_url,
+          nombre_completo: usuario.nombre_completo,
+          codigo_institucional: usuario.codigo_institucional,
+          tipo_usuario: rolesValidos,
+          escuela: usuario.escuela,
+          estado_academico: usuario.estado_academico,
+        },
+      });
+      await conexion.commit();
+      return decision;
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
   }
 
   async validar({

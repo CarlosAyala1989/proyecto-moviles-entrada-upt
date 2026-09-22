@@ -9,6 +9,15 @@ export function crearControladorCodigosQr(servicio) {
       respuesta.status(201).json({ datos: credencial });
     },
 
+    prepararOffline: async (solicitud, respuesta) => {
+      const lote = await servicio.prepararOffline({
+        usuarioId: solicitud.usuarioAutenticado.id,
+        sesionId: solicitud.sesionAutenticada.id,
+        ...solicitud.datosValidados.cuerpo,
+      });
+      respuesta.status(201).json({ datos: lote });
+    },
+
     consultarActual: async (solicitud, respuesta) => {
       const credencial = await servicio.consultarActual(
         solicitud.usuarioAutenticado.id,

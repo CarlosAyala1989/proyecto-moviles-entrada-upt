@@ -1,4 +1,22 @@
 class CodigoQrTemporal {
+  factory CodigoQrTemporal.offline({
+    required String codigoQr,
+    required DateTime emitidaEn,
+    required DateTime expiraEn,
+    required int duracionSegundos,
+    required String otp,
+  }) => CodigoQrTemporal(
+    codigoQr: codigoQr,
+    estado: 'PENDIENTE',
+    emitidaEn: emitidaEn,
+    expiraEn: expiraEn,
+    duracionSegundos: duracionSegundos,
+    unSoloUso: true,
+    puntoAccesoCodigo: 'TODAS',
+    puntoAccesoNombre: 'Cualquier puerta activa',
+    otp: otp,
+  );
+
   const CodigoQrTemporal({
     required this.codigoQr,
     required this.estado,
@@ -8,6 +26,7 @@ class CodigoQrTemporal {
     required this.unSoloUso,
     required this.puntoAccesoCodigo,
     required this.puntoAccesoNombre,
+    this.otp,
   });
 
   factory CodigoQrTemporal.desdeJson(Map<String, dynamic> json) {
@@ -33,4 +52,5 @@ class CodigoQrTemporal {
   final bool unSoloUso;
   final String puntoAccesoCodigo;
   final String puntoAccesoNombre;
+  final String? otp;
 }
