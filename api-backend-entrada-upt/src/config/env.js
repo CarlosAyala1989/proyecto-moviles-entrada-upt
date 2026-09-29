@@ -87,6 +87,9 @@ export const entorno = Object.freeze({
     redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI ?? '',
     dominio: (process.env.GOOGLE_WORKSPACE_DOMAIN ?? 'virtual.upt.pe').toLowerCase(),
   },
+  googleMaps: {
+    apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '',
+  },
   db: {
     host: process.env.DB_HOST,
     port: enteroPositivo(process.env.DB_PORT, 'DB_PORT'),

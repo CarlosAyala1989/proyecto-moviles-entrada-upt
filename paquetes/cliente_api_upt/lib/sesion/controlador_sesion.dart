@@ -123,8 +123,9 @@ class ControladorSesion extends ChangeNotifier {
               'TIEMPO_ESPERA_AGOTADO',
             }.contains(error.codigo) &&
             recuperada != null &&
-            await _restaurarSoloOffline(recuperada, revision))
+            await _restaurarSoloOffline(recuperada, revision)) {
           return;
+        }
         await _descartarSesion(siRevision: revision);
       }
     } catch (_) {

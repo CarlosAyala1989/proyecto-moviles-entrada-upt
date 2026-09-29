@@ -1,6 +1,7 @@
 import 'contratos_operacion.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -117,6 +118,63 @@ class ClienteApi
 
   Map<String, dynamic> _datos(Map<String, dynamic> respuesta) {
     return Map<String, dynamic>.from(respuesta['datos'] as Map);
+  }
+
+  Future<Uint8List> _solicitarImagen({
+    required String ruta,
+    required String tokenAcceso,
+    required Map<String, String> consulta,
+  }) async {
+    try {
+      final respuesta = await _clienteHttp
+          .get(
+            _construirUri(ruta, consulta),
+            headers: {
+              'accept': 'image/png',
+              'authorization': 'Bearer $tokenAcceso',
+            },
+          )
+          .timeout(_tiempoEspera);
+      if (respuesta.statusCode < 200 || respuesta.statusCode >= 300) {
+        Map<String, dynamic> errorJson = const {};
+        try {
+          final json = Map<String, dynamic>.from(
+            jsonDecode(utf8.decode(respuesta.bodyBytes)) as Map,
+          );
+          if (json['error'] is Map) {
+            errorJson = Map<String, dynamic>.from(json['error'] as Map);
+          }
+        } on FormatException {
+          // La respuesta se normaliza abajo sin exponer el contenido remoto.
+        }
+        throw ExcepcionApi(
+          codigo: errorJson['codigo'] as String? ?? 'ERROR_API',
+          mensaje:
+              errorJson['mensaje'] as String? ?? 'No pudimos cargar el mapa.',
+          estadoHttp: respuesta.statusCode,
+        );
+      }
+      final tipoContenido = respuesta.headers['content-type'] ?? '';
+      if (!tipoContenido.startsWith('image/')) {
+        throw const ExcepcionApi(
+          codigo: 'RESPUESTA_INVALIDA',
+          mensaje: 'El servicio no devolvió una imagen de mapa válida.',
+        );
+      }
+      return respuesta.bodyBytes;
+    } on ExcepcionApi {
+      rethrow;
+    } on TimeoutException {
+      throw const ExcepcionApi(
+        codigo: 'TIEMPO_ESPERA_AGOTADO',
+        mensaje: 'El mapa está tardando más de lo esperado.',
+      );
+    } on http.ClientException {
+      throw const ExcepcionApi(
+        codigo: 'ERROR_CONEXION',
+        mensaje: 'No pudimos comunicarnos con el servicio de mapas.',
+      );
+    }
   }
 
   @override
@@ -335,6 +393,26 @@ class ClienteApi
     );
     return List<Map<String, dynamic>>.from(respuesta['datos'] as List);
   }
+
+  @override
+  Future<Uint8List> obtenerMapaEstatico(
+    String tokenAcceso, {
+    required double latitud,
+    required double longitud,
+    required int zoom,
+    int ancho = 600,
+    int alto = 340,
+  }) => _solicitarImagen(
+    ruta: '/administracion/mapas/google/estatico',
+    tokenAcceso: tokenAcceso,
+    consulta: {
+      'latitud': latitud.toStringAsFixed(7),
+      'longitud': longitud.toStringAsFixed(7),
+      'zoom': '$zoom',
+      'ancho': '$ancho',
+      'alto': '$alto',
+    },
+  );
 
   @override
   Future<void> guardarPuerta(

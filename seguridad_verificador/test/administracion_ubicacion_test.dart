@@ -1,9 +1,13 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:seguridad_verificador/aplicacion/aplicacion_seguridad.dart';
 import 'package:seguridad_verificador/controladores/controlador_validacion_ingresos.dart';
 import 'package:seguridad_verificador/servicios/proveedor_ubicacion.dart';
+import 'package:seguridad_verificador/widgets/selector_punto_google_maps.dart';
 import 'ayudas/dobles_hito_11.dart';
 
 class ClienteOperativoFalso extends ClienteSeguridadFalso
@@ -14,6 +18,7 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
   bool fuera = true;
   int comprobaciones = 0;
   Map<String, dynamic>? guardiaGuardado;
+  Map<String, dynamic>? puertaGuardada;
   @override
   SesionUsuario get sesion => esAdmin
       ? super.sesion.conUsuario(
@@ -60,6 +65,17 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
     },
   ];
   @override
+  Future<Uint8List> obtenerMapaEstatico(
+    String tokenAcceso, {
+    required double latitud,
+    required double longitud,
+    required int zoom,
+    int ancho = 600,
+    int alto = 340,
+  }) async => base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  );
+  @override
   Future<List<Map<String, dynamic>>> consultarGuardias(
     String tokenAcceso,
   ) async => [];
@@ -68,7 +84,10 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
     String tokenAcceso,
     Map<String, dynamic> datos, {
     int? id,
-  }) async {}
+  }) async {
+    puertaGuardada = datos;
+  }
+
   @override
   Future<void> guardarGuardia(
     String tokenAcceso,
@@ -80,6 +99,18 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
 }
 
 void main() {
+  test('el centro del mapa conserva las coordenadas seleccionadas', () {
+    final punto = coordenadaDesdeToqueMapa(
+      centroLatitud: -18.0060535,
+      centroLongitud: -70.2266368,
+      zoom: 18,
+      desplazamientoX: 0,
+      desplazamientoY: 0,
+    );
+    expect(punto.latitud, closeTo(-18.0060535, 0.0000001));
+    expect(punto.longitud, closeTo(-70.2266368, 0.0000001));
+  });
+
   test(
     'perder el GPS al consultar historial bloquea la operación inmediatamente',
     () async {
@@ -213,6 +244,38 @@ void main() {
         'punto_acceso_id': 1,
         'activo': true,
       });
+    },
+  );
+
+  testWidgets(
+    'administrador selecciona la ubicación de una puerta tocando el mapa',
+    (tester) async {
+      final cliente = ClienteOperativoFalso(esAdmin: true);
+      await montar(tester, cliente);
+      await tester.tap(find.text('Agregar puerta'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Código de puerta'),
+        'PUERTA-MAPA',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nombre de puerta'),
+        'Puerta elegida en mapa',
+      );
+
+      final mapa = find.byKey(const ValueKey('selector-punto-google-maps'));
+      expect(mapa, findsOneWidget);
+      await tester.tapAt(tester.getCenter(mapa) + const Offset(60, -30));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar'));
+      await tester.pumpAndSettle();
+
+      expect(cliente.puertaGuardada, isNotNull);
+      expect(cliente.puertaGuardada!['codigo'], 'PUERTA-MAPA');
+      expect(cliente.puertaGuardada!['latitud'], isA<double>());
+      expect(cliente.puertaGuardada!['longitud'], isA<double>());
+      expect(cliente.puertaGuardada!['latitud'], isNot(1));
+      expect(cliente.puertaGuardada!['longitud'], isNot(1));
     },
   );
 

@@ -9,7 +9,9 @@ separada y el acceso mediante intranet y Google.
 
 1. Publica el código y `migraciones/011_asignaciones_seguridad.sql`. El arranque
    aplicará la migración automáticamente, conservando usuarios y puertas.
-2. En **Environment** de la API, conserva DB y Google y agrega las cinco
+2. En **Environment** de la API, conserva DB y Google, configura
+   `GOOGLE_MAPS_API_KEY` siguiendo la
+   [guía de Google Maps](../../GUIA_CLAVE_GOOGLE_MAPS.md), y agrega las cinco
    variables `ADMIN_INICIAL_*` preparadas en el archivo privado `.env.dokploy`.
    El usuario preparado es `ADMIN-UPT`; la contraseña está en el archivo privado
    `credenciales_administrador_dokploy.txt`. Estos archivos no se suben a Git.
@@ -38,18 +40,15 @@ retiran después de la primera creación, la cuenta sigue en la base de datos.
 
 ## Configurar una puerta
 
-Pulsa **Agregar puerta** y completa código, nombre, latitud, longitud y radio
-permitido en metros. Los códigos son únicos, por ejemplo `PUERTA-PRINCIPAL`.
-El radio define un perímetro circular. También puedes editar o desactivar las
-puertas existentes, conservando el historial.
+Pulsa **Agregar puerta**, completa código y nombre, y toca el punto exacto en el
+mapa integrado. Usa `+` y `-` para ajustar el acercamiento; las coordenadas se
+calculan automáticamente y se muestran sólo como confirmación. Completa el
+radio permitido en metros. Los códigos son únicos, por ejemplo
+`PUERTA-PRINCIPAL`, y el radio define un perímetro circular. También puedes
+editar o desactivar puertas existentes conservando el historial.
 
-**Abrir Google Maps** abre el mapa externo. Marca el lugar, copia sus coordenadas
-decimales y pégalas en el formulario; pulsa **Usar coordenadas copiadas**.
-En computadora, haz clic derecho sobre el punto y copia la primera línea.
-También se admiten enlaces de Maps con un `query`/`q` de coordenadas o un pin
-`!3d...!4d...`. Un enlace corto no contiene las coordenadas, y `@lat,lon`
-representa el centro de la cámara: no se utiliza como ubicación de la puerta.
-No hace falta una clave de Google Maps para abrir estos enlaces.
+El mapa necesita `GOOGLE_MAPS_API_KEY` en la API. Consulta la
+[guía para obtener y configurar la clave](../../GUIA_CLAVE_GOOGLE_MAPS.md).
 
 ## Registrar y asignar guardias
 
@@ -101,6 +100,7 @@ Todos requieren token de la API:
 | ADMINISTRADOR | POST /api/administracion/guardias | Crear guardia y asignarlo |
 | ADMINISTRADOR | PUT /api/administracion/guardias/:id | Editar/reasignar/desactivar guardia |
 | ADMINISTRADOR | GET/POST/PATCH /api/administracion/puntos-acceso | Gestionar puertas |
+| ADMINISTRADOR | GET /api/administracion/mapas/google/estatico | Mostrar el selector de ubicación |
 | SEGURIDAD | POST /api/seguridad/comprobar-ubicacion | Comprobar habilitación y obtener puerta asignada |
 | SEGURIDAD | POST /api/ingresos/validar | Escanear con ubicación y puerta asignada |
 | SEGURIDAD | GET /api/ingresos/recientes | Historial con latitud, longitud, precision_metros y obtenida_en como parámetros |
@@ -123,5 +123,4 @@ rechazado, y un guardia sin asignación no puede escanear. Para desarrollo,
 `npm run sembrar:pruebas` asigna únicamente al guardia ficticio `PRUEBA-SEG-001`
 a `PRUEBA-LOCAL`; nunca se ejecuta en producción.
 
-Referencias: [coordenadas en Google Maps](https://support.google.com/maps/answer/18539?co=GENIE.Platform%3DDesktop&hl=es)
-y [enlaces de Maps](https://developers.google.com/maps/documentation/urls/get-started).
+Configuración: [guía de la clave de Google Maps](../../GUIA_CLAVE_GOOGLE_MAPS.md).

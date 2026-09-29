@@ -1,7 +1,9 @@
-import '../servicios/coordenadas_maps.dart';
+import 'dart:typed_data';
+
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+
+import '../widgets/selector_punto_google_maps.dart';
 
 class PantallaAdministracion extends StatefulWidget {
   const PantallaAdministracion({
@@ -68,6 +70,8 @@ class _EstadoAdministracion extends State<PantallaAdministracion> {
         puerta: puerta,
         actual: actual,
         puertas: _puertas,
+        api: widget.api,
+        sesion: widget.sesion,
       ),
     );
     if (datos == null) return;
@@ -145,7 +149,7 @@ class _EstadoAdministracion extends State<PantallaAdministracion> {
                 const Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Aún no hay puertas. Registra las coordenadas y el radio permitido.',
+                    'Aún no hay puertas. Selecciona su ubicación en el mapa.',
                   ),
                 ),
               ..._puertas.map(
@@ -193,10 +197,14 @@ class _FormularioAdministracion extends StatefulWidget {
     required this.puerta,
     required this.actual,
     required this.puertas,
+    required this.api,
+    required this.sesion,
   });
   final bool puerta;
   final Map<String, dynamic>? actual;
   final List<Map<String, dynamic>> puertas;
+  final ContratoAdministracion api;
+  final ControladorSesion sesion;
   @override
   State<_FormularioAdministracion> createState() => _EstadoFormulario();
 }
@@ -207,24 +215,33 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
   int? _puntoId;
   bool _activo = true;
   String? _error;
+  double _latitud = -18.0060535;
+  double _longitud = -70.2266368;
+  bool _puntoSeleccionado = false;
   @override
   void initState() {
     super.initState();
     for (final clave
         in widget.puerta
-            ? [
-                'codigo',
-                'nombre',
-                'latitud',
-                'longitud',
-                'radio_permitido_metros',
-                'coordenadas_maps',
-              ]
+            ? ['codigo', 'nombre', 'radio_permitido_metros']
             : ['usuario', 'nombres', 'apellidos', 'contrasena']) {
       _campos[clave] = TextEditingController(
         text:
             '${widget.actual?[clave] ?? (clave == 'radio_permitido_metros' ? '100' : '')}',
       );
+    }
+    if (widget.puerta) {
+      final referencia =
+          widget.actual ??
+          widget.puertas.cast<Map<String, dynamic>?>().firstWhere(
+            (p) => p?['latitud'] is num && p?['longitud'] is num,
+            orElse: () => null,
+          );
+      if (referencia?['latitud'] is num && referencia?['longitud'] is num) {
+        _latitud = (referencia!['latitud'] as num).toDouble();
+        _longitud = (referencia['longitud'] as num).toDouble();
+      }
+      _puntoSeleccionado = widget.actual != null;
     }
     _puntoId = widget.actual?['punto_acceso_id'] as int?;
     if (!widget.puertas.any(
@@ -307,20 +324,24 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
 
   void _guardar() {
     if (!_formulario.currentState!.validate()) return;
+    if (widget.puerta && !_puntoSeleccionado) {
+      setState(
+        () => _error = 'Toca el mapa para confirmar el punto de la puerta.',
+      );
+      return;
+    }
     if (!widget.puerta && _puntoId == null) {
       setState(() => _error = 'Selecciona una puerta.');
       return;
     }
     final datos = <String, dynamic>{};
     for (final campo in _campos.entries) {
-      if (campo.key == 'coordenadas_maps') continue;
       if (campo.key == 'contrasena' &&
           campo.value.text.isEmpty &&
           widget.actual != null) {
         continue;
       }
-      datos[campo.key] =
-          ['latitud', 'longitud', 'radio_permitido_metros'].contains(campo.key)
+      datos[campo.key] = campo.key == 'radio_permitido_metros'
           ? double.parse(campo.value.text.trim())
           : (campo.key == 'contrasena'
                 ? campo.value.text
@@ -329,6 +350,8 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
                       : campo.value.text.trim()));
     }
     if (widget.puerta) {
+      datos['latitud'] = _latitud;
+      datos['longitud'] = _longitud;
       datos['estado'] = _activo ? 'ACTIVO' : 'INACTIVO';
     } else {
       datos['activo'] = _activo;
@@ -337,38 +360,23 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
     Navigator.pop(context, datos);
   }
 
-  Future<void> _maps() async {
-    final lat = double.tryParse(_campos['latitud']!.text);
-    final lon = double.tryParse(_campos['longitud']!.text);
-    final url = lat == null || lon == null
-        ? Uri.parse('https://www.google.com/maps')
-        : Uri.https('www.google.com', '/maps/search/', {
-            'api': '1',
-            'query': '$lat,$lon',
-          });
-    try {
-      if (!await launchUrl(url, mode: LaunchMode.externalApplication) &&
-          mounted) {
-        setState(() => _error = 'No se pudo abrir Google Maps.');
-      }
-    } catch (_) {
-      if (mounted) setState(() => _error = 'No se pudo abrir el navegador.');
-    }
+  Future<Uint8List> _cargarMapa({
+    required double latitud,
+    required double longitud,
+    required int zoom,
+  }) async {
+    final token = await widget.sesion.obtenerTokenAcceso();
+    return widget.api.obtenerMapaEstatico(
+      token,
+      latitud: latitud,
+      longitud: longitud,
+      zoom: zoom,
+    );
   }
 
-  void _pegarCoordenadas() {
-    final coordenadas = leerCoordenadasMaps(_campos['coordenadas_maps']!.text);
-    if (coordenadas == null) {
-      setState(
-        () => _error =
-            'Copia las coordenadas decimales del punto en Google Maps: latitud, longitud. Los enlaces cortos o del centro de la cámara no indican el punto exacto.',
-      );
-      return;
-    }
-    _campos['latitud']!.text = '${coordenadas.latitud}';
-    _campos['longitud']!.text = '${coordenadas.longitud}';
-    setState(() => _error = null);
-  }
+  Map<String, dynamic>? get _puertaSeleccionada => widget.puertas
+      .cast<Map<String, dynamic>?>()
+      .firstWhere((p) => p?['id'] == _puntoId, orElse: () => null);
 
   @override
   Widget build(BuildContext context) => AlertDialog(
@@ -376,7 +384,7 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
       '${widget.actual == null ? 'Agregar' : 'Editar'} ${widget.puerta ? 'puerta' : 'guardia'}',
     ),
     content: SizedBox(
-      width: 480,
+      width: 640,
       child: SingleChildScrollView(
         child: Form(
           key: _formulario,
@@ -386,38 +394,18 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
               if (widget.puerta) ...[
                 _campo('codigo', 'Código de puerta'),
                 _campo('nombre', 'Nombre de puerta'),
-                OutlinedButton.icon(
-                  onPressed: _maps,
-                  icon: const Icon(Icons.map),
-                  label: const Text('Abrir Google Maps'),
+                SelectorPuntoGoogleMaps(
+                  latitud: _latitud,
+                  longitud: _longitud,
+                  cargarMapa: _cargarMapa,
+                  alSeleccionar: (punto) => setState(() {
+                    _latitud = punto.latitud;
+                    _longitud = punto.longitud;
+                    _puntoSeleccionado = true;
+                    _error = null;
+                  }),
                 ),
-                const Text(
-                  'Marca el lugar en Maps, copia sus coordenadas y pégalas aquí. En computadora: clic derecho sobre el punto.',
-                ),
-                TextField(
-                  controller: _campos['coordenadas_maps'],
-                  decoration: const InputDecoration(
-                    labelText: 'Coordenadas o enlace de Maps con coordenadas',
-                  ),
-                ),
-                TextButton(
-                  onPressed: _pegarCoordenadas,
-                  child: const Text('Usar coordenadas copiadas'),
-                ),
-                _campo(
-                  'latitud',
-                  'Latitud',
-                  numero: true,
-                  minimo: -90,
-                  maximo: 90,
-                ),
-                _campo(
-                  'longitud',
-                  'Longitud',
-                  numero: true,
-                  minimo: -180,
-                  maximo: 180,
-                ),
+                const SizedBox(height: 12),
                 _campo(
                   'radio_permitido_metros',
                   'Radio permitido (metros)',
@@ -443,8 +431,17 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
                     labelText: 'Puerta asignada',
                   ),
                   items: _puertasActivas(),
-                  onChanged: (id) => _puntoId = id,
+                  onChanged: (id) => setState(() => _puntoId = id),
                 ),
+                if (_puertaSeleccionada case final puerta?) ...[
+                  const SizedBox(height: 12),
+                  SelectorPuntoGoogleMaps(
+                    latitud: (puerta['latitud'] as num).toDouble(),
+                    longitud: (puerta['longitud'] as num).toDouble(),
+                    cargarMapa: _cargarMapa,
+                    interactivo: false,
+                  ),
+                ],
               ],
               SwitchListTile(
                 title: const Text('Activo'),

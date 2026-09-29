@@ -1,4 +1,5 @@
 import '../modelos/ubicacion_reportada.dart';
+import 'dart:typed_data';
 
 abstract interface class ContratoControlSeguridad {
   Future<Map<String, dynamic>> comprobarUbicacionSeguridad(
@@ -8,6 +9,14 @@ abstract interface class ContratoControlSeguridad {
 }
 
 abstract interface class ContratoAdministracion {
+  Future<Uint8List> obtenerMapaEstatico(
+    String tokenAcceso, {
+    required double latitud,
+    required double longitud,
+    required int zoom,
+    int ancho = 600,
+    int alto = 340,
+  });
   Future<List<Map<String, dynamic>>> consultarPuertas(String tokenAcceso);
   Future<void> guardarPuerta(
     String tokenAcceso,

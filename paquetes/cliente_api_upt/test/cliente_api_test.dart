@@ -36,16 +36,53 @@ void main() {
     );
   });
 
-  test('permite configurar tiempoEspera personalizado desde el constructor', () {
-    final clientePorDefecto = ClienteApi();
-    expect(
-      clientePorDefecto.tiempoEspera,
-      ConfiguracionApi.duracionMaximaSolicitud,
+  test(
+    'permite configurar tiempoEspera personalizado desde el constructor',
+    () {
+      final clientePorDefecto = ClienteApi();
+      expect(
+        clientePorDefecto.tiempoEspera,
+        ConfiguracionApi.duracionMaximaSolicitud,
+      );
+
+      final clienteTresSegundos = ClienteApi(
+        tiempoEspera: const Duration(seconds: 3),
+      );
+      expect(clienteTresSegundos.tiempoEspera, const Duration(seconds: 3));
+    },
+  );
+
+  test('carga el mapa administrativo como imagen autenticada', () async {
+    late http.Request solicitudRecibida;
+    final cliente = ClienteApi(
+      urlBase: 'https://api.example.invalid/api',
+      clienteHttp: MockClient((solicitud) async {
+        solicitudRecibida = solicitud;
+        return http.Response.bytes(
+          [137, 80, 78, 71],
+          200,
+          headers: {'content-type': 'image/png'},
+        );
+      }),
     );
 
-    final clienteTresSegundos = ClienteApi(
-      tiempoEspera: const Duration(seconds: 3),
+    final imagen = await cliente.obtenerMapaEstatico(
+      'token-administrador',
+      latitud: -18.0060535,
+      longitud: -70.2266368,
+      zoom: 18,
     );
-    expect(clienteTresSegundos.tiempoEspera, const Duration(seconds: 3));
+
+    expect(imagen, [137, 80, 78, 71]);
+    expect(
+      solicitudRecibida.url.path,
+      '/api/administracion/mapas/google/estatico',
+    );
+    expect(solicitudRecibida.url.queryParameters['zoom'], '18');
+    expect(
+      solicitudRecibida.headers['authorization'],
+      'Bearer token-administrador',
+    );
+    expect(solicitudRecibida.headers['accept'], 'image/png');
   });
 }

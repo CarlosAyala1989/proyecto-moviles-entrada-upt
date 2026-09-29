@@ -30,6 +30,12 @@ todas las puertas: la API obtiene la asignación del usuario y ya no requiere
 
 El administrador entra con una cuenta de rol `ADMINISTRADOR` y ve el panel.
 Consulta [la creación del primer administrador y la configuración de guardias](../api-backend-entrada-upt/docs/administracion_guardias.md).
+Al crear o editar una puerta, selecciona el punto directamente sobre el mapa y
+ajusta el acercamiento con los controles `+` y `-`. Al asignar un guardia, la
+aplicación muestra una vista previa de la puerta elegida. La clave de Google
+Maps se configura como `GOOGLE_MAPS_API_KEY` en la API de Dokploy; no se pasa
+como `dart-define` ni se guarda en el APK.
+Consulta la [guía completa para obtener y configurar la clave](../GUIA_CLAVE_GOOGLE_MAPS.md).
 El guardia activa ubicación después del acceso. Fuera de zona aparece la
 pantalla de ayuda; se reevalúa periódicamente y el backend comprueba también
 la ubicación en cada operación. La cámara se solicita al abrir el escáner.
