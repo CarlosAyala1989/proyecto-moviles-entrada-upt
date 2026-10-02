@@ -1,18 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:cliente_api_upt/cliente_api_upt.dart';
 import 'package:flutter/material.dart';
 
-import '../servicios/proveedor_ubicacion.dart';
+import '../widgets/selector_punto_google_maps.dart';
 
 class PantallaAdministracion extends StatefulWidget {
   const PantallaAdministracion({
     required this.sesion,
     required this.api,
-    this.proveedorUbicacion = const ProveedorUbicacionDispositivo(),
     super.key,
   });
   final ControladorSesion sesion;
   final ContratoAdministracion api;
-  final ProveedorUbicacion proveedorUbicacion;
   @override
   State<PantallaAdministracion> createState() => _EstadoAdministracion();
 }
@@ -70,7 +70,8 @@ class _EstadoAdministracion extends State<PantallaAdministracion> {
         puerta: puerta,
         actual: actual,
         puertas: _puertas,
-        proveedorUbicacion: widget.proveedorUbicacion,
+        api: widget.api,
+        sesion: widget.sesion,
       ),
     );
     if (datos == null) return;
@@ -148,7 +149,7 @@ class _EstadoAdministracion extends State<PantallaAdministracion> {
                 const Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Aún no hay puertas. Registra una desde su ubicación actual.',
+                    'Aún no hay puertas. Selecciona su ubicación en el mapa.',
                   ),
                 ),
               ..._puertas.map(
@@ -196,27 +197,26 @@ class _FormularioAdministracion extends StatefulWidget {
     required this.puerta,
     required this.actual,
     required this.puertas,
-    required this.proveedorUbicacion,
+    required this.api,
+    required this.sesion,
   });
   final bool puerta;
   final Map<String, dynamic>? actual;
   final List<Map<String, dynamic>> puertas;
-  final ProveedorUbicacion proveedorUbicacion;
+  final ContratoAdministracion api;
+  final ControladorSesion sesion;
   @override
   State<_FormularioAdministracion> createState() => _EstadoFormulario();
 }
 
 class _EstadoFormulario extends State<_FormularioAdministracion> {
-  static const _precisionMaximaPuertaMetros = 50.0;
   final _formulario = GlobalKey<FormState>();
   final Map<String, TextEditingController> _campos = {};
   int? _puntoId;
   bool _activo = true;
   String? _error;
-  double? _latitud;
-  double? _longitud;
-  double? _precisionMetros;
-  bool _capturandoUbicacion = false;
+  double _latitud = -18.0060535;
+  double _longitud = -70.2266368;
   bool _puntoSeleccionado = false;
   @override
   void initState() {
@@ -231,12 +231,17 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
       );
     }
     if (widget.puerta) {
-      final referencia = widget.actual;
+      final referencia =
+          widget.actual ??
+          widget.puertas.cast<Map<String, dynamic>?>().firstWhere(
+            (p) => p?['latitud'] is num && p?['longitud'] is num,
+            orElse: () => null,
+          );
       if (referencia?['latitud'] is num && referencia?['longitud'] is num) {
         _latitud = (referencia!['latitud'] as num).toDouble();
         _longitud = (referencia['longitud'] as num).toDouble();
       }
-      _puntoSeleccionado = _latitud != null && _longitud != null;
+      _puntoSeleccionado = widget.actual != null;
     }
     _puntoId = widget.actual?['punto_acceso_id'] as int?;
     if (!widget.puertas.any(
@@ -318,22 +323,10 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
   );
 
   void _guardar() {
-    if (_capturandoUbicacion) return;
     if (!_formulario.currentState!.validate()) return;
     if (widget.puerta && !_puntoSeleccionado) {
       setState(
-        () => _error = 'Pulsa «Usar mi ubicación actual» estando en la puerta.',
-      );
-      return;
-    }
-    if (widget.puerta &&
-        _precisionMetros != null &&
-        _precisionMetros! >=
-            double.parse(_campos['radio_permitido_metros']!.text.trim())) {
-      setState(
-        () => _error =
-            'La precisión debe ser mejor que el radio de la puerta. '
-            'Vuelve a capturar la ubicación con mejor señal.',
+        () => _error = 'Toca el mapa para confirmar el punto de la puerta.',
       );
       return;
     }
@@ -367,59 +360,18 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
     Navigator.pop(context, datos);
   }
 
-  Future<void> _usarUbicacionActual() async {
-    if (_capturandoUbicacion) return;
-    setState(() {
-      _capturandoUbicacion = true;
-      _error = null;
-    });
-    try {
-      final ubicacion = await widget.proveedorUbicacion
-          .obtenerUbicacionActual();
-      if (!mounted) return;
-      if (!ubicacion.latitud.isFinite ||
-          !ubicacion.longitud.isFinite ||
-          ubicacion.latitud < -90 ||
-          ubicacion.latitud > 90 ||
-          ubicacion.longitud < -180 ||
-          ubicacion.longitud > 180 ||
-          !ubicacion.precisionMetros.isFinite ||
-          ubicacion.precisionMetros < 0) {
-        throw const ExcepcionUbicacion(
-          'El dispositivo devolvió una ubicación inválida. Inténtalo nuevamente.',
-        );
-      }
-      final antiguedad = DateTime.now().difference(ubicacion.obtenidaEn);
-      if (antiguedad > const Duration(seconds: 30) ||
-          antiguedad < const Duration(seconds: -10)) {
-        throw const ExcepcionUbicacion(
-          'La ubicación no es reciente. Vuelve a capturar el punto de la puerta.',
-        );
-      }
-      if (ubicacion.precisionMetros > _precisionMaximaPuertaMetros) {
-        throw const ExcepcionUbicacion(
-          'La ubicación tiene poca precisión. Activa la ubicación precisa '
-          'y vuelve a intentarlo en un lugar con mejor señal.',
-        );
-      }
-      setState(() {
-        _latitud = ubicacion.latitud;
-        _longitud = ubicacion.longitud;
-        _precisionMetros = ubicacion.precisionMetros;
-        _puntoSeleccionado = true;
-      });
-    } on ExcepcionUbicacion catch (error) {
-      if (mounted) setState(() => _error = error.mensaje);
-    } catch (_) {
-      if (mounted) {
-        setState(
-          () => _error =
-              'No pudimos obtener tu ubicación. Revisa los permisos y el GPS e inténtalo nuevamente.',
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _capturandoUbicacion = false);
-    }
+  Future<Uint8List> _cargarMapa({
+    required double latitud,
+    required double longitud,
+    required int zoom,
+  }) async {
+    final token = await widget.sesion.obtenerTokenAcceso();
+    return widget.api.obtenerMapaEstatico(
+      token,
+      latitud: latitud,
+      longitud: longitud,
+      zoom: zoom,
+    );
   }
 
   Map<String, dynamic>? get _puertaSeleccionada => widget.puertas
@@ -442,36 +394,17 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
               if (widget.puerta) ...[
                 _campo('codigo', 'Código de puerta'),
                 _campo('nombre', 'Nombre de puerta'),
-                const Text(
-                  'Párate en la puerta y captura tu ubicación. '
-                  'El teléfono te pedirá permiso si es necesario.',
+                SelectorPuntoGoogleMaps(
+                  latitud: _latitud,
+                  longitud: _longitud,
+                  cargarMapa: _cargarMapa,
+                  alSeleccionar: (punto) => setState(() {
+                    _latitud = punto.latitud;
+                    _longitud = punto.longitud;
+                    _puntoSeleccionado = true;
+                    _error = null;
+                  }),
                 ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _capturandoUbicacion ? null : _usarUbicacionActual,
-                  icon: _capturandoUbicacion
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location),
-                  label: Text(
-                    _capturandoUbicacion
-                        ? 'Obteniendo ubicación…'
-                        : 'Usar mi ubicación actual',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (_puntoSeleccionado)
-                  Text(
-                    'Latitud: ${_latitud!.toStringAsFixed(7)}\n'
-                    'Longitud: ${_longitud!.toStringAsFixed(7)}\n'
-                    '${_precisionMetros == null ? 'Ubicación guardada de esta puerta.' : 'Precisión aproximada: ${_precisionMetros!.toStringAsFixed(1)} m'}',
-                    key: const ValueKey('ubicacion-puerta'),
-                    textAlign: TextAlign.center,
-                  )
-                else
-                  const Text('Todavía no has capturado la ubicación.'),
                 const SizedBox(height: 12),
                 _campo(
                   'radio_permitido_metros',
@@ -502,10 +435,11 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
                 ),
                 if (_puertaSeleccionada case final puerta?) ...[
                   const SizedBox(height: 12),
-                  Text(
-                    'Ubicación de la puerta: ${puerta['latitud']}, '
-                    '${puerta['longitud']}\n'
-                    'Radio permitido: ${puerta['radio_permitido_metros']} m',
+                  SelectorPuntoGoogleMaps(
+                    latitud: (puerta['latitud'] as num).toDouble(),
+                    longitud: (puerta['longitud'] as num).toDouble(),
+                    cargarMapa: _cargarMapa,
+                    interactivo: false,
                   ),
                 ],
               ],
@@ -529,10 +463,7 @@ class _EstadoFormulario extends State<_FormularioAdministracion> {
         onPressed: () => Navigator.pop(context),
         child: const Text('Cancelar'),
       ),
-      FilledButton(
-        onPressed: _capturandoUbicacion ? null : _guardar,
-        child: const Text('Guardar'),
-      ),
+      FilledButton(onPressed: _guardar, child: const Text('Guardar')),
     ],
   );
   List<DropdownMenuItem<int>> _puertasActivas() => widget.puertas

@@ -30,14 +30,12 @@ todas las puertas: la API obtiene la asignación del usuario y ya no requiere
 
 El administrador entra con una cuenta de rol `ADMINISTRADOR` y ve el panel.
 Consulta [la creación del primer administrador y la configuración de guardias](../api-backend-entrada-upt/docs/administracion_guardias.md).
-Al crear o editar una puerta, el administrador se coloca en ella y pulsa
-**Usar mi ubicación actual**. La app solicita permiso si hace falta, obtiene
-una lectura actual y muestra latitud, longitud y precisión. Después completa
-el radio permitido y guarda. No usa Google Maps ni requiere una API key.
-Al asignar un guardia se muestran las coordenadas y el radio de la puerta.
-Una puerta existente conserva su punto si se edita sin volver a capturar GPS.
-La precisión de una nueva lectura debe ser de 50 m o mejor y menor que el
-radio elegido. Consulta la [guía de registro mediante GPS](../GUIA_REGISTRAR_PUERTA_GPS.md).
+Al crear o editar una puerta, selecciona el punto directamente sobre el mapa y
+ajusta el acercamiento con los controles `+` y `-`. Al asignar un guardia, la
+aplicación muestra una vista previa de la puerta elegida. La clave de Google
+Maps se configura como `GOOGLE_MAPS_API_KEY` en la API de Dokploy; no se pasa
+como `dart-define` ni se guarda en el APK.
+Consulta la [guía completa para obtener y configurar la clave](../GUIA_CLAVE_GOOGLE_MAPS.md).
 El guardia activa ubicación después del acceso. Fuera de zona aparece la
 pantalla de ayuda; se reevalúa periódicamente y el backend comprueba también
 la ubicación en cada operación. La cámara se solicita al abrir el escáner.

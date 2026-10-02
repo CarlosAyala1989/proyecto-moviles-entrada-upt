@@ -1,13 +1,9 @@
 # Guía para obtener y configurar la clave de Google Maps
 
-La aplicación administrativa actual registra puertas mediante **Usar mi
-ubicación actual**, sin Google Maps ni clave API. Consulta la
-[guía de registro por GPS](GUIA_REGISTRAR_PUERTA_GPS.md).
-
-Esta guía corresponde al selector de mapas de versiones anteriores. Su ruta
-**Maps Static API** permanece en el backend para compatibilidad. En esas
-versiones Flutter solicita el mapa a la API UPT autenticada y la API consulta
-a Google. La clave no se incluye en el APK ni en la aplicación de escritorio.
+La aplicación administrativa usa **Maps Static API** para mostrar el selector
+de puertas. La aplicación Flutter solicita el mapa a la API UPT autenticada y
+la API consulta a Google. De esta forma, la clave no se incluye en el APK ni en
+la aplicación de escritorio.
 
 La credencial necesaria es una **API key de Google Maps Platform**. No es el
 cliente OAuth usado para registrar estudiantes.
@@ -148,3 +144,4 @@ y no habilites APIs que esta aplicación no utiliza.
 - [Primeros pasos y parámetros](https://developers.google.com/maps/documentation/maps-static/start)
 - [Seguridad de claves de Google Maps Platform](https://developers.google.com/maps/api-security-best-practices)
 - [Uso y facturación de Maps Static API](https://developers.google.com/maps/documentation/maps-static/usage-and-billing)
+

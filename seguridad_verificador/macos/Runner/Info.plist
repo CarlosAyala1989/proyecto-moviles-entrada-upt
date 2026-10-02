@@ -28,7 +28,5 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
-	<key>NSLocationUsageDescription</key>
-	<string>La ubicación permite registrar el punto de una puerta y comprobar dónde se realiza la validación de ingreso.</string>
 </dict>
 </plist>

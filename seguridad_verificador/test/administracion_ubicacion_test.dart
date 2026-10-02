@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cliente_api_upt/cliente_api_upt.dart';
@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:seguridad_verificador/aplicacion/aplicacion_seguridad.dart';
 import 'package:seguridad_verificador/controladores/controlador_validacion_ingresos.dart';
 import 'package:seguridad_verificador/servicios/proveedor_ubicacion.dart';
+import 'package:seguridad_verificador/widgets/selector_punto_google_maps.dart';
 import 'ayudas/dobles_hito_11.dart';
 
 class ClienteOperativoFalso extends ClienteSeguridadFalso
@@ -18,7 +19,6 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
   int comprobaciones = 0;
   Map<String, dynamic>? guardiaGuardado;
   Map<String, dynamic>? puertaGuardada;
-  int solicitudesMapa = 0;
   @override
   SesionUsuario get sesion => esAdmin
       ? super.sesion.conUsuario(
@@ -72,14 +72,9 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
     required int zoom,
     int ancho = 600,
     int alto = 340,
-  }) async {
-    solicitudesMapa++;
-    throw const ExcepcionApi(
-      codigo: 'GOOGLE_MAPS_NO_CONFIGURADO',
-      mensaje: 'Google Maps no está configurado.',
-    );
-  }
-
+  }) async => base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  );
   @override
   Future<List<Map<String, dynamic>>> consultarGuardias(
     String tokenAcceso,
@@ -103,15 +98,19 @@ class ClienteOperativoFalso extends ClienteSeguridadFalso
   }
 }
 
-class ProveedorUbicacionPendiente implements ProveedorUbicacion {
-  ProveedorUbicacionPendiente(this.resultado);
-  final Future<UbicacionReportada> resultado;
-
-  @override
-  Future<UbicacionReportada> obtenerUbicacionActual() => resultado;
-}
-
 void main() {
+  test('el centro del mapa conserva las coordenadas seleccionadas', () {
+    final punto = coordenadaDesdeToqueMapa(
+      centroLatitud: -18.0060535,
+      centroLongitud: -70.2266368,
+      zoom: 18,
+      desplazamientoX: 0,
+      desplazamientoY: 0,
+    );
+    expect(punto.latitud, closeTo(-18.0060535, 0.0000001));
+    expect(punto.longitud, closeTo(-70.2266368, 0.0000001));
+  });
+
   test(
     'perder el GPS al consultar historial bloquea la operación inmediatamente',
     () async {
@@ -146,11 +145,7 @@ void main() {
       ProveedorUbicacionFalso ubicacion,
     })
   >
-  montar(
-    WidgetTester tester,
-    ClienteOperativoFalso cliente, {
-    ProveedorUbicacion? proveedorAdministracion,
-  }) async {
+  montar(WidgetTester tester, ClienteOperativoFalso cliente) async {
     final sesion = ControladorSesion(
       clienteApi: cliente,
       almacenSesion: AlmacenSesionFalso(),
@@ -174,7 +169,6 @@ void main() {
         controladorSesion: sesion,
         controladorValidacion: controlador,
         clienteAdministracion: cliente,
-        proveedorUbicacionAdministracion: proveedorAdministracion ?? ubicacion,
       ),
     );
     await tester.pumpAndSettle();
@@ -242,7 +236,6 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
-      expect(cliente.solicitudesMapa, 0);
       expect(cliente.guardiaGuardado, {
         'usuario': 'GUARDIA-01',
         'nombres': 'Juan Pedro',
@@ -254,217 +247,37 @@ void main() {
     },
   );
 
-  Future<void> completarPuerta(WidgetTester tester) async {
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Código de puerta'),
-      'PUERTA-GPS',
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nombre de puerta'),
-      'Puerta desde el teléfono',
-    );
-  }
-
-  testWidgets('administrador registra su GPS sin solicitar Google Maps', (
-    tester,
-  ) async {
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    final estado = await montar(tester, cliente);
-    await tester.tap(find.text('Agregar puerta'));
-    await tester.pumpAndSettle();
-    await completarPuerta(tester);
-    expect(estado.ubicacion.solicitudes, 0);
-    expect(find.text('Todavía no has capturado la ubicación.'), findsOneWidget);
-    await tester.tap(find.text('Usar mi ubicación actual'));
-    await tester.pumpAndSettle();
-    expect(estado.ubicacion.solicitudes, 1);
-    expect(find.textContaining('Precisión aproximada: 10.0 m'), findsOneWidget);
-    await tester.tap(find.text('Guardar'));
-    await tester.pumpAndSettle();
-    expect(cliente.puertaGuardada, {
-      'codigo': 'PUERTA-GPS',
-      'nombre': 'Puerta desde el teléfono',
-      'radio_permitido_metros': 100.0,
-      'latitud': -18.013,
-      'longitud': -70.251,
-      'estado': 'ACTIVO',
-    });
-    expect(cliente.solicitudesMapa, 0);
-  });
-
-  testWidgets('una puerta nueva exige capturar su ubicación', (tester) async {
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    final estado = await montar(tester, cliente);
-    await tester.tap(find.text('Agregar puerta'));
-    await tester.pumpAndSettle();
-    await completarPuerta(tester);
-    await tester.tap(find.text('Guardar'));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('Pulsa «Usar mi ubicación actual» estando en la puerta.'),
-      findsOneWidget,
-    );
-    expect(estado.ubicacion.solicitudes, 0);
-    expect(cliente.puertaGuardada, isNull);
-  });
-
-  testWidgets('permiso denegado informa el error y permite reintentar', (
-    tester,
-  ) async {
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    await montar(
-      tester,
-      cliente,
-      proveedorAdministracion: ProveedorUbicacionFalso(
-        ubicacion: crearUbicacion(),
-        error: const ExcepcionUbicacion('Permite el acceso a la ubicación.'),
-      ),
-    );
-    await tester.tap(find.text('Agregar puerta'));
-    await tester.pumpAndSettle();
-    await completarPuerta(tester);
-    await tester.tap(find.text('Usar mi ubicación actual'));
-    await tester.pumpAndSettle();
-    expect(find.text('Permite el acceso a la ubicación.'), findsOneWidget);
-    expect(find.text('Todavía no has capturado la ubicación.'), findsOneWidget);
-    final boton = tester.widget<FilledButton>(
-      find.ancestor(
-        of: find.text('Usar mi ubicación actual'),
-        matching: find.byWidgetPredicate((widget) => widget is FilledButton),
-      ),
-    );
-    expect(boton.onPressed, isNotNull);
-    await tester.tap(find.text('Guardar'));
-    await tester.pumpAndSettle();
-    expect(cliente.puertaGuardada, isNull);
-  });
-
-  for (final caso in [
-    (nombre: 'imprecisa', precision: 200.0, segundos: 0, latitud: -18.013),
-    (nombre: 'antigua', precision: 10.0, segundos: 120, latitud: -18.013),
-    (nombre: 'futura', precision: 10.0, segundos: -120, latitud: -18.013),
-    (nombre: 'inválida', precision: 10.0, segundos: 0, latitud: double.nan),
-  ]) {
-    testWidgets('rechaza una ubicación ${caso.nombre} para una puerta nueva', (
-      tester,
-    ) async {
+  testWidgets(
+    'administrador selecciona la ubicación de una puerta tocando el mapa',
+    (tester) async {
       final cliente = ClienteOperativoFalso(esAdmin: true);
-      await montar(
-        tester,
-        cliente,
-        proveedorAdministracion: ProveedorUbicacionFalso(
-          ubicacion: UbicacionReportada(
-            latitud: caso.latitud,
-            longitud: -70.251,
-            precisionMetros: caso.precision,
-            obtenidaEn: DateTime.now().subtract(
-              Duration(seconds: caso.segundos),
-            ),
-          ),
-        ),
-      );
+      await montar(tester, cliente);
       await tester.tap(find.text('Agregar puerta'));
       await tester.pumpAndSettle();
-      await completarPuerta(tester);
-      await tester.tap(find.text('Usar mi ubicación actual'));
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Todavía no has capturado la ubicación.'),
-        findsOneWidget,
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Código de puerta'),
+        'PUERTA-MAPA',
       );
-      expect(find.byKey(const ValueKey('ubicacion-puerta')), findsNothing);
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nombre de puerta'),
+        'Puerta elegida en mapa',
+      );
+
+      final mapa = find.byKey(const ValueKey('selector-punto-google-maps'));
+      expect(mapa, findsOneWidget);
+      await tester.tapAt(tester.getCenter(mapa) + const Offset(60, -30));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
-      expect(cliente.puertaGuardada, isNull);
-    });
-  }
 
-  testWidgets('no permite un radio menor que la precisión capturada', (
-    tester,
-  ) async {
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    await montar(tester, cliente);
-    await tester.tap(find.text('Agregar puerta'));
-    await tester.pumpAndSettle();
-    await completarPuerta(tester);
-    await tester.tap(find.text('Usar mi ubicación actual'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Radio permitido (metros)'),
-      '5',
-    );
-    await tester.tap(find.text('Guardar'));
-    await tester.pumpAndSettle();
-    expect(find.textContaining('La precisión debe ser mejor'), findsOneWidget);
-    expect(cliente.puertaGuardada, isNull);
-  });
-
-  testWidgets('editar conserva el punto guardado si no se captura otro', (
-    tester,
-  ) async {
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    final estado = await montar(tester, cliente);
-    await tester.tap(find.text('Puerta principal (PUERTA-01)'));
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('Ubicación guardada de esta puerta.'),
-      findsOneWidget,
-    );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nombre de puerta'),
-      'Puerta renombrada',
-    );
-    await tester.tap(find.text('Guardar'));
-    await tester.pumpAndSettle();
-    expect(cliente.puertaGuardada!['nombre'], 'Puerta renombrada');
-    expect(cliente.puertaGuardada!['latitud'], 1.0);
-    expect(cliente.puertaGuardada!['longitud'], 1.0);
-    expect(estado.ubicacion.solicitudes, 0);
-    expect(cliente.solicitudesMapa, 0);
-  });
-
-  testWidgets('editar permite reemplazar el punto con el GPS del teléfono', (
-    tester,
-  ) async {
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    await montar(tester, cliente);
-    await tester.tap(find.text('Puerta principal (PUERTA-01)'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Usar mi ubicación actual'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Guardar'));
-    await tester.pumpAndSettle();
-    expect(cliente.puertaGuardada!['latitud'], -18.013);
-    expect(cliente.puertaGuardada!['longitud'], -70.251);
-  });
-
-  testWidgets('bloquea Guardar durante la captura y tolera cancelar', (
-    tester,
-  ) async {
-    final pendiente = Completer<UbicacionReportada>();
-    final cliente = ClienteOperativoFalso(esAdmin: true);
-    await montar(
-      tester,
-      cliente,
-      proveedorAdministracion: ProveedorUbicacionPendiente(pendiente.future),
-    );
-    await tester.tap(find.text('Agregar puerta'));
-    await tester.pumpAndSettle();
-    await completarPuerta(tester);
-    await tester.tap(find.text('Usar mi ubicación actual'));
-    await tester.pump();
-    final guardar = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Guardar'),
-    );
-    expect(guardar.onPressed, isNull);
-    expect(find.text('Obteniendo ubicación…'), findsOneWidget);
-    await tester.tap(find.text('Cancelar'));
-    await tester.pumpAndSettle();
-    pendiente.complete(crearUbicacion());
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    expect(cliente.puertaGuardada, isNull);
-  });
+      expect(cliente.puertaGuardada, isNotNull);
+      expect(cliente.puertaGuardada!['codigo'], 'PUERTA-MAPA');
+      expect(cliente.puertaGuardada!['latitud'], isA<double>());
+      expect(cliente.puertaGuardada!['longitud'], isA<double>());
+      expect(cliente.puertaGuardada!['latitud'], isNot(1));
+      expect(cliente.puertaGuardada!['longitud'], isNot(1));
+    },
+  );
 
   testWidgets(
     'formulario explica el formato del usuario antes de enviar el guardia',
