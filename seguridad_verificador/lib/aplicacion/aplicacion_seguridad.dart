@@ -11,17 +11,21 @@ import '../pantallas/pantalla_inicio_seguridad.dart';
 import '../pantallas/pantalla_inicio_sesion_seguridad.dart';
 import '../pantallas/pantalla_preparacion_seguridad.dart';
 import '../tema/tema_seguridad.dart';
+import '../servicios/proveedor_ubicacion.dart';
 
 class AplicacionSeguridad extends StatelessWidget {
   const AplicacionSeguridad({
     required this.controladorSesion,
     this.clienteAdministracion,
+    this.proveedorUbicacionAdministracion =
+        const ProveedorUbicacionDispositivo(),
     required this.controladorValidacion,
     super.key,
   });
 
   final ControladorSesion controladorSesion;
   final ContratoAdministracion? clienteAdministracion;
+  final ProveedorUbicacion proveedorUbicacionAdministracion;
   final ControladorValidacionIngresos controladorValidacion;
 
   @override
@@ -74,6 +78,7 @@ class AplicacionSeguridad extends StatelessWidget {
         return PantallaAdministracion(
           sesion: controladorSesion,
           api: clienteAdministracion!,
+          proveedorUbicacion: proveedorUbicacionAdministracion,
         );
       }
       return PantallaInicioSeguridad(controladorSesion: controladorSesion);
