@@ -10,8 +10,7 @@ separada y el acceso mediante intranet y Google.
 1. Publica el código y `migraciones/011_asignaciones_seguridad.sql`. El arranque
    aplicará la migración automáticamente, conservando usuarios y puertas.
 2. En **Environment** de la API, conserva DB y Google, configura
-   `GOOGLE_MAPS_API_KEY` siguiendo la
-   [guía de Google Maps](../../GUIA_CLAVE_GOOGLE_MAPS.md), y agrega las cinco
+   las variables de sesión y agrega las cinco
    variables `ADMIN_INICIAL_*` preparadas en el archivo privado `.env.dokploy`.
    El usuario preparado es `ADMIN-UPT`; la contraseña está en el archivo privado
    `credenciales_administrador_dokploy.txt`. Estos archivos no se suben a Git.
@@ -40,15 +39,21 @@ retiran después de la primera creación, la cuenta sigue en la base de datos.
 
 ## Configurar una puerta
 
-Pulsa **Agregar puerta**, completa código y nombre, y toca el punto exacto en el
-mapa integrado. Usa `+` y `-` para ajustar el acercamiento; las coordenadas se
-calculan automáticamente y se muestran sólo como confirmación. Completa el
-radio permitido en metros. Los códigos son únicos, por ejemplo
+Colócate físicamente en la puerta, pulsa **Agregar puerta**, completa código y
+nombre y pulsa **Usar mi ubicación actual**. Acepta el permiso de ubicación y
+activa ubicación precisa. La app muestra latitud, longitud y precisión de la
+lectura. Completa el radio permitido en metros y pulsa **Guardar**.
+Los códigos son únicos, por ejemplo
 `PUERTA-PRINCIPAL`, y el radio define un perímetro circular. También puedes
 editar o desactivar puertas existentes conservando el historial.
 
-El mapa necesita `GOOGLE_MAPS_API_KEY` en la API. Consulta la
-[guía para obtener y configurar la clave](../../GUIA_CLAVE_GOOGLE_MAPS.md).
+El formulario obtiene las coordenadas del dispositivo sin Google Maps ni
+API key. Rechaza lecturas inválidas, con antigüedad superior a 30 segundos o
+precisión peor que 50 metros. El radio elegido debe superar la precisión
+capturada. Al editar se conserva el punto anterior salvo que se capture otro.
+Consulta la [guía de registro por GPS](../../GUIA_REGISTRAR_PUERTA_GPS.md).
+La API mantiene las rutas de mapas para clientes anteriores; la app actual
+no las solicita. Las rutas de puertas y el esquema SQL permanecen compatibles.
 
 ## Registrar y asignar guardias
 
@@ -100,7 +105,7 @@ Todos requieren token de la API:
 | ADMINISTRADOR | POST /api/administracion/guardias | Crear guardia y asignarlo |
 | ADMINISTRADOR | PUT /api/administracion/guardias/:id | Editar/reasignar/desactivar guardia |
 | ADMINISTRADOR | GET/POST/PATCH /api/administracion/puntos-acceso | Gestionar puertas |
-| ADMINISTRADOR | GET /api/administracion/mapas/google/estatico | Mostrar el selector de ubicación |
+| ADMINISTRADOR | GET /api/administracion/mapas/google/estatico | Mapa para clientes anteriores; la app actual no lo solicita |
 | SEGURIDAD | POST /api/seguridad/comprobar-ubicacion | Comprobar habilitación y obtener puerta asignada |
 | SEGURIDAD | POST /api/ingresos/validar | Escanear con ubicación y puerta asignada |
 | SEGURIDAD | GET /api/ingresos/recientes | Historial con latitud, longitud, precision_metros y obtenida_en como parámetros |
@@ -123,4 +128,4 @@ rechazado, y un guardia sin asignación no puede escanear. Para desarrollo,
 `npm run sembrar:pruebas` asigna únicamente al guardia ficticio `PRUEBA-SEG-001`
 a `PRUEBA-LOCAL`; nunca se ejecuta en producción.
 
-Configuración: [guía de la clave de Google Maps](../../GUIA_CLAVE_GOOGLE_MAPS.md).
+Configuración: [guía de registro de puertas por GPS](../../GUIA_REGISTRAR_PUERTA_GPS.md).

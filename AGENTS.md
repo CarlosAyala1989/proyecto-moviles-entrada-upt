@@ -7,6 +7,15 @@
 - `paquetes/cliente_api_upt/`: shared HTTP client, models, configuration, and session storage; real-backend tests live in `integracion/`.
 - `scripts/`: verification. Root Markdown files document milestones, endpoints, and workflows.
 
+## Flujo entre el proyecto principal y el repositorio del equipo
+
+- Trabajar primero en `/VMQEMU/proyecto-moviles-entrada-upt`. En este proyecto se pueden modificar Flutter, la API y los demás archivos necesarios.
+- Ejecutar las pruebas pertinentes aquí antes de transferir los cambios. Si las pruebas fallan o quedan pendientes, resolverlo antes de copiar la API al repositorio del equipo.
+- Después de validar, transferir únicamente los cambios de `api-backend-entrada-upt/` a `/VMQEMU/app-seguridad-entrada-upt/api-backend-entrada-upt`.
+- En `/VMQEMU/app-seguridad-entrada-upt`, modificar exclusivamente la carpeta `api-backend-entrada-upt/`; no tocar Flutter ni otros archivos del repositorio del equipo.
+- Para la transferencia, usar `cp` para los archivos validados y `rm` para las eliminaciones correspondientes, siempre con rutas limitadas a la API del equipo. Conservar `.git`, `.env`, credenciales, dependencias locales y cambios ajenos; no borrar indiscriminadamente toda la carpeta.
+- Según el usuario, ambas APIs están iguales al establecer este flujo. Las modificaciones futuras se realizan y prueban primero en el proyecto principal.
+
 ## Build, Test, and Development Commands
 
 Use Node.js 20+, Flutter compatible with Dart 3.10, configured MariaDB, and Chrome/Chromium plus Tesseract for the intranet verification flow. The Docker image installs these browser dependencies.

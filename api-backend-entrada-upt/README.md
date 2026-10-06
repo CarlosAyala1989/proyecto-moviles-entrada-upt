@@ -35,7 +35,7 @@ npm run dev
 | `POST` | `/api/ingresos/validar` | Decisión de acceso reservada al rol `SEGURIDAD`. |
 | `GET` | `/api/ingresos/recientes` | Historial reciente del operador autenticado. |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
-| `GET` | `/api/administracion/mapas/google/estatico` | Mapa para seleccionar una puerta; requiere administrador. |
+| `GET` | `/api/administracion/mapas/google/estatico` | Mapa para clientes anteriores; requiere administrador. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
 interrumpir clientes locales ya configurados.
@@ -106,10 +106,12 @@ El historial paginado, los puntos de acceso, el resumen, la auditoría y las
 configuraciones permitidas están documentados en
 `docs/administracion_operativa.md`.
 
-El selector visual de puertas usa Maps Static API mediante la propia API. En
-Dokploy configura `GOOGLE_MAPS_API_KEY` con una clave restringida a Maps Static
-API. La clave permanece en el servidor y no se incluye en las aplicaciones
-Flutter. Sigue la [guía para obtener y configurar la clave](../GUIA_CLAVE_GOOGLE_MAPS.md).
+La aplicación actual registra puertas con **Usar mi ubicación actual** y el
+GPS del administrador. No requiere `GOOGLE_MAPS_API_KEY` ni cambios del esquema
+SQL. Consulta la [guía de registro mediante GPS](../GUIA_REGISTRAR_PUERTA_GPS.md).
+La ruta Maps Static API se conserva para clientes anteriores y sólo necesita
+la clave Google si esos clientes la utilizan. Esa clave permanece en el
+servidor. La [guía de Maps](../GUIA_CLAVE_GOOGLE_MAPS.md) documenta esa integración.
 
 ## Pruebas
 

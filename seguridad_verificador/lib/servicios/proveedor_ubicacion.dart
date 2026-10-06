@@ -42,7 +42,7 @@ class ProveedorUbicacionDispositivo implements ProveedorUbicacion {
   Future<UbicacionReportada> obtenerUbicacionActual() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       throw const ExcepcionUbicacion(
-        'Activa la ubicación del dispositivo para validar el ingreso.',
+        'Activa la ubicación del dispositivo e inténtalo nuevamente.',
       );
     }
 
@@ -52,7 +52,7 @@ class ProveedorUbicacionDispositivo implements ProveedorUbicacion {
     }
     if (permiso == LocationPermission.denied) {
       throw const ExcepcionUbicacion(
-        'Se necesita permiso de ubicación para validar el punto de acceso.',
+        'Se necesita permiso de ubicación. Permite el acceso e inténtalo nuevamente.',
       );
     }
     if (permiso == LocationPermission.deniedForever) {
@@ -80,7 +80,7 @@ class ProveedorUbicacionDispositivo implements ProveedorUbicacion {
       );
     } on LocationServiceDisabledException {
       throw const ExcepcionUbicacion(
-        'La ubicación se desactivó antes de comprobar el ingreso.',
+        'La ubicación del dispositivo se desactivó. Actívala e inténtalo nuevamente.',
       );
     } on PermissionDeniedException {
       throw const ExcepcionUbicacion(
