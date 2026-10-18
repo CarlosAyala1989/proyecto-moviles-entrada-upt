@@ -5,6 +5,7 @@ import { crearControladorIngresos } from '../controladores/ingresos.controlador.
 import { RepositorioIngresosMariaDb } from '../repositorios/repositorio_ingresos_mariadb.js';
 import { crearServicioIngresos } from '../servicios/ingresos.servicio.js';
 import {
+  esquemaConsultarHistorialPersonal,
   esquemaConsultarIngresosRecientes,
   esquemaValidarIngreso,
 } from '../validacion/ingresos.esquemas.js';
@@ -17,7 +18,13 @@ export function crearEnrutadorIngresos({
   const servicio = crearServicioIngresos(repositorio);
   const controlador = crearControladorIngresos(servicio);
 
-  enrutador.use(requerirAutenticacion, requerirRoles('SEGURIDAD'));
+  enrutador.use(requerirAutenticacion);
+  enrutador.get(
+    '/historial',
+    validarDatos({ consulta: esquemaConsultarHistorialPersonal }),
+    controlador.consultarHistorialPersonal,
+  );
+  enrutador.use(requerirRoles('SEGURIDAD'));
   enrutador.post(
     '/validar',
     validarDatos({ cuerpo: esquemaValidarIngreso }),

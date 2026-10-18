@@ -34,6 +34,7 @@ npm run dev
 | Varios | `/api/codigos-qr/*` | QR temporal en línea y vinculación del estudiante para OTP sin conexión. |
 | `POST` | `/api/ingresos/validar` | Decisión de acceso reservada al rol `SEGURIDAD`. |
 | `GET` | `/api/ingresos/recientes` | Historial reciente del operador autenticado. |
+| `GET` | `/api/ingresos/historial` | Historial personal paginado de ingresos y rechazos del titular autenticado (US-14). |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
 | `GET` | `/api/administracion/mapas/google/estatico` | Mapa para clientes anteriores; requiere administrador. |
 
@@ -129,7 +130,10 @@ inválidos, alterados, vencidos, revocados y reutilizados; usuarios inactivos,
 rol de seguridad, ubicación, punto de acceso y consumo simultáneo. No se
 ejecutan aplicaciones Flutter durante esta etapa. La administración operativa
 cubre filtros por usuario, fecha, resultado, motivo, punto y operador, además
-de comprobar la privacidad y autorización de los historiales.
+de comprobar la privacidad y autorización de los historiales. La US-14 cubre
+historial personal, aislamiento entre titulares, paginación, filtros, sesiones
+inválidas y un flujo real de validación QR. El contrato para integrar la app está
+en [docs/us14_historial_personal.md](docs/us14_historial_personal.md).
 
 ## Docker
 

@@ -19,6 +19,8 @@ function normalizarResultado(resultado) {
 
 export function crearServicioIngresos(repositorio) {
   return {
+    consultarHistorialPersonal: (consulta) => repositorio.consultarHistorialPersonal(consulta),
+
     validar: async ({
       codigo_qr: codigoQr,
       punto_acceso_codigo: puntoAccesoCodigo,

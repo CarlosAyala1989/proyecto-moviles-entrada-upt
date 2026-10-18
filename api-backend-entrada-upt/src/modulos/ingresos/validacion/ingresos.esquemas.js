@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+const fechaHistorial = z.string().datetime({ offset: true })
+  .transform((valor) => new Date(valor));
+
+export const esquemaConsultarHistorialPersonal = z.object({
+  pagina: z.coerce.number().int().positive().max(1_000_000).default(1),
+  limite: z.coerce.number().int().positive().max(100).default(20),
+  resultado: z.enum(['AUTORIZADO', 'DENEGADO']).optional(),
+  desde: fechaHistorial.optional(),
+  hasta: fechaHistorial.optional(),
+}).strict().refine(
+  ({ desde, hasta }) => !desde || !hasta || desde <= hasta,
+  { message: 'La fecha inicial no puede ser posterior a la fecha final.' },
+);
+
 export const esquemaValidarIngreso = z.object({
   codigo_qr: z.string().min(1).max(512),
   punto_acceso_codigo: z.string()

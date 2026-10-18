@@ -48,6 +48,7 @@ const rutasEsperadas = new Set([
   'DELETE /api/codigos-qr/actual',
   'POST /api/ingresos/validar',
   'GET /api/ingresos/recientes',
+  'GET /api/ingresos/historial',
   'GET /api/administracion/roles',
   'GET /api/administracion/usuarios',
   'POST /api/administracion/usuarios',
@@ -595,6 +596,18 @@ async function ejecutarFlujoHttp() {
   });
   assert.ok(recientes.datos.some(({ resultado }) => resultado === 'AUTORIZADO'));
   assert.ok(recientes.datos.some(({ resultado }) => resultado === 'DENEGADO'));
+
+  const historialPersonal = await solicitar({
+    ruta: '/api/ingresos/historial?pagina=1&limite=10',
+    idRuta: 'GET /api/ingresos/historial',
+    token: sesionPortador.token_acceso,
+  });
+  assert.equal(historialPersonal.paginacion.total, 2);
+  assert.ok(historialPersonal.datos.every(({ usuario_id }) => usuario_id === portadorId));
+  assert.deepEqual(
+    historialPersonal.datos.map(({ resultado }) => resultado),
+    ['DENEGADO', 'AUTORIZADO'],
+  );
 
   const accesos = await solicitar({
     ruta: `/api/administracion/accesos?usuario_id=${portadorId}&pagina=1&limite=10`,

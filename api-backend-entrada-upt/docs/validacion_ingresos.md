@@ -165,3 +165,7 @@ provisionales de desarrollo, no reglas oficiales de la UPT.
 La consulta administrativa y paginada del historial está disponible en
 `/api/administracion/accesos`. El contrato y sus reglas de privacidad están
 documentados en `administracion_operativa.md`.
+
+Cada titular puede consultar sus propios ingresos y rechazos mediante
+`GET /api/ingresos/historial`, autenticado y sin GPS. Los parámetros, tipos y
+ejemplos están en [us14_historial_personal.md](us14_historial_personal.md).

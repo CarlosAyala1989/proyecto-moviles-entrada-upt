@@ -196,6 +196,71 @@ function coincideIntegridad(credencial, codigo) {
 }
 
 export class RepositorioIngresosMariaDb {
+  async consultarHistorialPersonal({ usuarioId, pagina, limite, resultado, desde, hasta }) {
+    // La identidad proviene exclusivamente de la sesión autenticada.
+    const condiciones = ['registros_acceso.usuario_id = ?'];
+    const parametros = [usuarioId];
+    if (resultado) {
+      condiciones.push('registros_acceso.resultado = ?');
+      parametros.push(resultado);
+    }
+    if (desde) {
+      condiciones.push('registros_acceso.registrado_en >= ?');
+      parametros.push(desde);
+    }
+    if (hasta) {
+      condiciones.push('registros_acceso.registrado_en <= ?');
+      parametros.push(hasta);
+    }
+    const clausula = `WHERE ${condiciones.join(' AND ')}`;
+    const conexion = await grupoConexiones.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const [conteo] = await conexion.query(
+        `SELECT COUNT(*) AS total FROM registros_acceso ${clausula}`,
+        parametros,
+      );
+      const filas = await conexion.query(
+        `SELECT registros_acceso.id, registros_acceso.usuario_id,
+                registros_acceso.resultado, registros_acceso.motivo,
+                registros_acceso.registrado_en, puntos_acceso.id AS punto_id,
+                puntos_acceso.codigo AS punto_codigo, puntos_acceso.nombre AS punto_nombre
+         FROM registros_acceso
+         JOIN puntos_acceso ON puntos_acceso.id = registros_acceso.punto_acceso_id
+         ${clausula}
+         ORDER BY registros_acceso.registrado_en DESC, registros_acceso.id DESC
+         LIMIT ? OFFSET ?`,
+        [...parametros, limite, (pagina - 1) * limite],
+      );
+      await conexion.commit();
+      return {
+        registros: filas.map((fila) => ({
+          id: fila.id,
+          usuario_id: fila.usuario_id,
+          resultado: fila.resultado,
+          motivo: fila.motivo,
+          registrado_en: fila.registrado_en.toISOString(),
+          punto_acceso: {
+            id: fila.punto_id,
+            codigo: fila.punto_codigo,
+            nombre: fila.punto_nombre,
+          },
+        })),
+        paginacion: {
+          pagina,
+          limite,
+          total: conteo.total,
+          total_paginas: Math.ceil(conteo.total / limite),
+        },
+      };
+    } catch (error) {
+      await conexion.rollback();
+      throw error;
+    } finally {
+      conexion.release();
+    }
+  }
+
   async consultarConfiguracion() {
     const marcadores = clavesConfiguracion.map(() => '?').join(', ');
     const filas = await grupoConexiones.query(

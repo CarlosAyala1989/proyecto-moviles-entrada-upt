@@ -1,5 +1,16 @@
 export function crearControladorIngresos(servicio) {
   return {
+    consultarHistorialPersonal: async (solicitud, respuesta) => {
+      const resultado = await servicio.consultarHistorialPersonal({
+        ...solicitud.datosValidados.consulta,
+        usuarioId: solicitud.usuarioAutenticado.id,
+      });
+      respuesta.set('Cache-Control', 'no-store').json({
+        datos: resultado.registros,
+        paginacion: resultado.paginacion,
+      });
+    },
+
     validar: async (solicitud, respuesta) => {
       const resultado = await servicio.validar({
         ...solicitud.datosValidados.cuerpo,

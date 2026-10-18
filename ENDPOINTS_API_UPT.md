@@ -1,6 +1,6 @@
 # Catálogo completo de endpoints — API Entrada UPT
 
-Este documento describe los **37 endpoints HTTP publicados** por el backend en
+Este documento describe los **38 endpoints HTTP publicados** por el backend en
 el estado actual del proyecto. Incluye los datos que el cliente envía, la
 respuesta exitosa y el rol necesario.
 
@@ -452,7 +452,7 @@ autorizado, verificado y tener al menos uno de los roles `ESTUDIANTE`,
   La API verifica firma, tiempo, dispositivo, usuario, rol, puerta activa y
   ubicación del guardia. El guardia necesita internet en todo momento.
 
-## 6. Validación e historial del personal de seguridad
+## 6. Validación e historiales de ingresos
 
 ### 6.1 `POST /api/ingresos/validar`
 
@@ -551,6 +551,20 @@ Una decisión denegada también es `200`, pero omite `identidad`:
   ]
 }
 ```
+
+### 6.3 `GET /api/ingresos/historial` (US-14)
+
+- Autenticación: Bearer de cualquier usuario habilitado.
+- Devuelve únicamente los ingresos y rechazos del titular de la sesión.
+- Consulta opcional: `pagina` (entero `1..1000000`, defecto `1`), `limite`
+  (entero `1..100`, defecto `20`), `resultado` (`AUTORIZADO` o `DENEGADO`),
+  `desde` y `hasta` (ISO 8601 con zona, inclusivas).
+- No recibe cuerpo, identificador de usuario ni GPS.
+- Respuesta `200`: `{ datos: RegistroHistorial[], paginacion }`. Cada registro
+  contiene `id` y `usuario_id` (enteros), `resultado`, `motivo`, `registrado_en`
+  (cadenas; fecha UTC ISO 8601) y `punto_acceso: { id, codigo, nombre }`.
+- Contrato completo, tipos y ejemplos en
+  [US-14: historial personal](api-backend-entrada-upt/docs/us14_historial_personal.md).
 
 ## 7. Administración de usuarios
 
