@@ -7,6 +7,7 @@ export const grupoConexiones = mariadb.createPool({
   database: entorno.db.database,
   user: entorno.db.user,
   password: entorno.db.password,
+  connectTimeout: entorno.db.connectTimeout,
   allowPublicKeyRetrieval: entorno.db.allowPublicKeyRetrieval,
   cachingRsaPublicKey: entorno.db.cachingRsaPublicKey,
   connectionLimit: entorno.db.connectionLimit,

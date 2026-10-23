@@ -35,11 +35,21 @@ npm run dev
 | `POST` | `/api/ingresos/validar` | Decisión de acceso reservada al rol `SEGURIDAD`. |
 | `GET` | `/api/ingresos/recientes` | Historial reciente del operador autenticado. |
 | `GET` | `/api/ingresos/historial` | Historial personal paginado de ingresos y rechazos del titular autenticado (US-14). |
+| `GET` | `/api/notificaciones` | Bandeja personal paginada de denegaciones y alertas (US-20/US-21). |
+| `GET` | `/api/notificaciones/resumen` | Contadores personales de notificaciones no leídas. |
+| `GET` | `/api/notificaciones/:id` | Detalle de una notificación propia. |
+| `PATCH` | `/api/notificaciones/:id/leida` | Confirmación de lectura idempotente. |
 | Varios | `/api/administracion/*` | Administración protegida por el rol `ADMINISTRADOR`. |
 | `GET` | `/api/administracion/mapas/google/estatico` | Mapa para clientes anteriores; requiere administrador. |
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
 interrumpir clientes locales ya configurados.
+
+El contrato detallado para la aplicación de estudiante, con parámetros, tipos,
+respuestas y reglas de generación, está en
+[US-20/US-21: notificaciones y alertas](docs/us20_us21_notificaciones_alertas.md).
+La bandeja funciona mediante consultas HTTP; el canal de soporte es configurable
+con `CANAL_SOPORTE_ACCESO`. No requiere un proveedor de notificaciones push.
 
 ### Prueba HTTP reproducible
 

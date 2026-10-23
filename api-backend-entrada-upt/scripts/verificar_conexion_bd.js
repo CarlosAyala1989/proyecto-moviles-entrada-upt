@@ -8,6 +8,7 @@ const tablasRequeridas = [
   'dispositivos',
   'intentos_inicio_sesion',
   'migraciones_aplicadas',
+  'notificaciones_usuario',
   'perfiles_academicos',
   'puntos_acceso',
   'registros_acceso',
@@ -33,7 +34,7 @@ try {
     console.error(`Faltan tablas requeridas: ${faltantes.join(', ')}`);
     process.exitCode = 1;
   } else {
-    console.log('Las 15 tablas requeridas están disponibles.');
+    console.log(`Las ${tablasRequeridas.length} tablas requeridas están disponibles.`);
   }
 } catch (error) {
   const codigo = error.cause?.code ?? error.code ?? 'ERROR_CONEXION';

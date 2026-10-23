@@ -49,6 +49,10 @@ const rutasEsperadas = new Set([
   'POST /api/ingresos/validar',
   'GET /api/ingresos/recientes',
   'GET /api/ingresos/historial',
+  'GET /api/notificaciones',
+  'GET /api/notificaciones/resumen',
+  'GET /api/notificaciones/:id',
+  'PATCH /api/notificaciones/:id/leida',
   'GET /api/administracion/roles',
   'GET /api/administracion/usuarios',
   'POST /api/administracion/usuarios',
@@ -608,6 +612,33 @@ async function ejecutarFlujoHttp() {
     historialPersonal.datos.map(({ resultado }) => resultado),
     ['DENEGADO', 'AUTORIZADO'],
   );
+
+  const notificaciones = await solicitar({
+    ruta: '/api/notificaciones?estado=NO_LEIDA',
+    idRuta: 'GET /api/notificaciones',
+    token: sesionPortador.token_acceso,
+  });
+  assert.equal(notificaciones.paginacion.total, 2);
+  assert.ok(notificaciones.datos.every(({ usuario_id }) => usuario_id === portadorId));
+  const notificacionId = notificaciones.datos[0].id;
+  const detalleNotificacion = await solicitar({
+    ruta: `/api/notificaciones/${notificacionId}`,
+    idRuta: 'GET /api/notificaciones/:id',
+    token: sesionPortador.token_acceso,
+  });
+  assert.equal(detalleNotificacion.datos.tipo, 'INTENTO_SOSPECHOSO');
+  const leida = await solicitar({
+    metodo: 'PATCH', ruta: `/api/notificaciones/${notificacionId}/leida`,
+    idRuta: 'PATCH /api/notificaciones/:id/leida',
+    token: sesionPortador.token_acceso,
+  });
+  assert.equal(leida.datos.estado, 'LEIDA');
+  const resumenNotificaciones = await solicitar({
+    ruta: '/api/notificaciones/resumen',
+    idRuta: 'GET /api/notificaciones/resumen',
+    token: sesionPortador.token_acceso,
+  });
+  assert.equal(resumenNotificaciones.datos.total_no_leidas, 1);
 
   const accesos = await solicitar({
     ruta: `/api/administracion/accesos?usuario_id=${portadorId}&pagina=1&limite=10`,

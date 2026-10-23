@@ -54,7 +54,14 @@ function enteroPositivo(valor, nombre, valorPredeterminado) {
   return valorConvertido;
 }
 
+const canalSoporteAcceso = (process.env.CANAL_SOPORTE_ACCESO
+  ?? 'Acércate al personal de seguridad de la puerta.').trim();
+if (!canalSoporteAcceso || canalSoporteAcceso.length > 500) {
+  throw new Error('CANAL_SOPORTE_ACCESO debe contener entre 1 y 500 caracteres.');
+}
+
 export const entorno = Object.freeze({
+  canalSoporteAcceso,
   nodeEnv: process.env.NODE_ENV ?? 'development',
   zonaHoraria: zonaHorariaOperativa,
   port: enteroPositivo(process.env.PORT, 'PORT', 3000),
@@ -96,6 +103,7 @@ export const entorno = Object.freeze({
     database: process.env.DB_DATABASE,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
+    connectTimeout: enteroPositivo(process.env.DB_CONNECT_TIMEOUT_MS, 'DB_CONNECT_TIMEOUT_MS', 10_000),
     allowPublicKeyRetrieval: process.env.DB_ALLOW_PUBLIC_KEY_RETRIEVAL === 'true',
     cachingRsaPublicKey: process.env.DB_CACHING_RSA_PUBLIC_KEY || undefined,
     connectionLimit: enteroPositivo(

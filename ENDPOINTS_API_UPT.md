@@ -1,6 +1,6 @@
 # Catálogo completo de endpoints — API Entrada UPT
 
-Este documento describe los **38 endpoints HTTP publicados** por el backend en
+Este documento describe los **42 endpoints HTTP publicados** por el backend en
 el estado actual del proyecto. Incluye los datos que el cliente envía, la
 respuesta exitosa y el rol necesario.
 
@@ -565,6 +565,20 @@ Una decisión denegada también es `200`, pero omite `identidad`:
   (cadenas; fecha UTC ISO 8601) y `punto_acceso: { id, codigo, nombre }`.
 - Contrato completo, tipos y ejemplos en
   [US-14: historial personal](api-backend-entrada-upt/docs/us14_historial_personal.md).
+
+### 6.4 Notificaciones personales (US-20/US-21)
+
+Todas requieren Bearer y sólo acceden a datos del titular actual:
+
+| Método | Ruta | Datos enviados | Respuesta `200` |
+| --- | --- | --- | --- |
+| `GET` | `/api/notificaciones` | Query opcional: `pagina`, `limite` (enteros), `tipo`, `estado` (enum), `desde`, `hasta` (ISO 8601). | `{ datos: Notificacion[], paginacion }`. |
+| `GET` | `/api/notificaciones/resumen` | Ninguno. | `{ datos: { total_no_leidas, denegaciones_no_leidas, alertas_no_leidas } }`, todos enteros. |
+| `GET` | `/api/notificaciones/:id` | ID entero positivo en la ruta. | `{ datos: Notificacion }`. |
+| `PATCH` | `/api/notificaciones/:id/leida` | ID en ruta; sin cuerpo o `{}`. | `{ datos: Notificacion }` con estado `LEIDA` y fecha de primera lectura. |
+
+Contrato completo con tipos, ejemplos, reglas de generación y configuración:
+[US-20/US-21: notificaciones y alertas](api-backend-entrada-upt/docs/us20_us21_notificaciones_alertas.md).
 
 ## 7. Administración de usuarios
 

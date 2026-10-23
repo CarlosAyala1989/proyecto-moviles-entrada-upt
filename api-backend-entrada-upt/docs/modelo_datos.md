@@ -41,6 +41,10 @@ erDiagram
 - `registros_acceso`: registra decisiones autorizadas y denegadas, incluyendo
   intentos con tokens desconocidos mediante una huella no reversible.
 - `registros_auditoria`: registra operaciones administrativas y sensibles.
+- `notificaciones_usuario`: bandeja personal US-20/US-21, con causa general,
+  soporte, tipo y estado de lectura. Cada aviso pertenece a un usuario y a un
+  registro de acceso. La clave `(registro_acceso_id, tipo)` evita duplicar el
+  mismo evento; la decisión y sus avisos se confirman en una misma transacción.
 - `configuraciones_sistema`: mantiene parámetros del backend fuera de Flutter.
 - `migraciones_aplicadas`: controla el orden de evolución del esquema.
 

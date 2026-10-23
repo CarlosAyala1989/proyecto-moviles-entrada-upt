@@ -22,6 +22,7 @@ DB_DATABASE=upt_ingreso-version2
 DB_USER=upt_app
 DB_PASSWORD=COPIAR_PASSWORD_DE_INTERNAL_CREDENTIALS
 DB_CONNECTION_LIMIT=10
+CANAL_SOPORTE_ACCESO=Acércate al personal de seguridad de la puerta.
 DB_ALLOW_PUBLIC_KEY_RETRIEVAL=true
 CLAVE_QR_OFFLINE=GENERAR_32_BYTES_BASE64URL_Y_MANTENER_ESTA_CLAVE
 ```
@@ -68,7 +69,7 @@ Abre una terminal del contenedor de la **API** y ejecuta en `/app`:
 npm run verificar:bd
 ```
 
-El comando es de solo lectura: comprueba conexión, nombre de la base, versión del servidor y las 15 tablas requeridas. No imprime contraseñas ni cambia filas. Debe mostrar `Conexión correcta` y `Las 15 tablas requeridas están disponibles`.
+El comando es de solo lectura: comprueba conexión, nombre de la base, versión del servidor y las 16 tablas requeridas. No imprime contraseñas ni cambia filas. Debe mostrar `Conexión correcta` y `Las 16 tablas requeridas están disponibles`.
 
 Después consulta desde el mismo contenedor:
 

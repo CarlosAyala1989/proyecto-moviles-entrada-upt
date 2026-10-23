@@ -169,3 +169,9 @@ documentados en `administracion_operativa.md`.
 Cada titular puede consultar sus propios ingresos y rechazos mediante
 `GET /api/ingresos/historial`, autenticado y sin GPS. Los parámetros, tipos y
 ejemplos están en [us14_historial_personal.md](us14_historial_personal.md).
+
+Cada decisión `DENEGADO` con titular identificado genera un aviso personal en la
+misma transacción del acceso. La reutilización, alteración o uso de un dispositivo
+desvinculado genera además una alerta de posible uso sospechoso. Los códigos sin
+titular no generan avisos. Contratos y condiciones en
+[US-20/US-21](us20_us21_notificaciones_alertas.md).

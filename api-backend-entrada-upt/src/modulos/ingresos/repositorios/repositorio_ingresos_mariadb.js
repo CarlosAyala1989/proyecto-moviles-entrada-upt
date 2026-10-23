@@ -1,6 +1,7 @@
 import { grupoConexiones } from '../../../config/database.js';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
 import { compararHashes } from '../../../seguridad/codigos_qr.js';
+import { registrarNotificacionesDenegacion } from '../../notificaciones/servicios/notificaciones.servicio.js';
 import {
   descifrarSecretoOffline,
   duracionPasoOfflineSegundos,
@@ -152,6 +153,11 @@ async function registrarDecision(conexion, {
       puntoAcceso.distanciaMetros,
     ],
   );
+  if (resultado === 'DENEGADO') {
+    await registrarNotificacionesDenegacion(conexion, {
+      usuarioId, registroAccesoId: registro.insertId, motivo,
+    });
+  }
   const [filaRegistrada] = await conexion.query(
     'SELECT registrado_en FROM registros_acceso WHERE id = ?',
     [registro.insertId],
@@ -300,40 +306,41 @@ export class RepositorioIngresosMariaDb {
         conexion, usuarioId: usuario?.id, credencialId: null, puntoAcceso,
         usuarioSeguridadId, codigo, ubicacion,
       };
+      // Cada retorno espera el commit antes de que finally libere la conexión.
       const denegar = async (motivo) => {
         const decision = await decisionDenegada(datos, motivo);
         await conexion.commit();
         return decision;
       };
-      if (puntoAcceso.estado !== 'ACTIVO') return denegar('PUNTO_ACCESO_INACTIVO');
+      if (puntoAcceso.estado !== 'ACTIVO') return await denegar('PUNTO_ACCESO_INACTIVO');
       if (puntoAcceso.distanciaMetros > puntoAcceso.radioPermitidoMetros) {
-        return denegar('UBICACION_ESCANEO_FUERA_DE_ZONA');
+        return await denegar('UBICACION_ESCANEO_FUERA_DE_ZONA');
       }
       if (!dispositivo || dispositivo.estado !== 'ACTIVO' || !dispositivo.secreto_qr_cifrado
-          || dispositivo.usuario_id !== usuario.id) return denegar('DISPOSITIVO_NO_VINCULADO');
+          || dispositivo.usuario_id !== usuario.id) return await denegar('DISPOSITIVO_NO_VINCULADO');
       if (usuario.estado !== 'ACTIVO' || usuario.estado_autorizacion !== 'AUTORIZADO') {
-        return denegar('USUARIO_NO_HABILITADO');
+        return await denegar('USUARIO_NO_HABILITADO');
       }
-      if (!usuario.identidad_verificada) return denegar('IDENTIDAD_NO_VERIFICADA');
+      if (!usuario.identidad_verificada) return await denegar('IDENTIDAD_NO_VERIFICADA');
       const roles = await consultarRoles(conexion, usuario.id);
       const rolesValidos = roles.filter((rol) => rolesPortadores.includes(rol));
-      if (rolesValidos.length === 0) return denegar('ROL_PORTADOR_NO_HABILITADO');
+      if (rolesValidos.length === 0) return await denegar('ROL_PORTADOR_NO_HABILITADO');
       const [reloj] = await conexion.query('SELECT CURRENT_TIMESTAMP(3) AS ahora');
       const pasoActual = Math.floor(reloj.ahora.getTime() / (duracionPasoOfflineSegundos * 1000));
-      if (Math.abs(codigo.pasoTiempo - pasoActual) > 1) return denegar('CODIGO_OFFLINE_NO_VIGENTE');
+      if (Math.abs(codigo.pasoTiempo - pasoActual) > 1) return await denegar('CODIGO_OFFLINE_NO_VIGENTE');
       if (!verificarFirmaOffline(codigo, descifrarSecretoOffline(dispositivo.secreto_qr_cifrado))) {
-        return denegar('INTEGRIDAD_CREDENCIAL_INVALIDA');
+        return await denegar('INTEGRIDAD_CREDENCIAL_INVALIDA');
       }
       const [uso] = await conexion.query(
         `SELECT id FROM usos_codigos_offline WHERE dispositivo_id = ? AND paso_tiempo = ?`,
         [codigo.dispositivoId, codigo.pasoTiempo],
       );
-      if (uso) return denegar('CREDENCIAL_YA_UTILIZADA');
+      if (uso) return await denegar('CREDENCIAL_YA_UTILIZADA');
       const insercion = await conexion.query(
         `INSERT IGNORE INTO usos_codigos_offline (dispositivo_id, paso_tiempo, punto_acceso_id)
          VALUES (?, ?, ?)`, [codigo.dispositivoId, codigo.pasoTiempo, puntoAcceso.id],
       );
-      if (insercion.affectedRows !== 1) return denegar('CREDENCIAL_YA_UTILIZADA');
+      if (insercion.affectedRows !== 1) return await denegar('CREDENCIAL_YA_UTILIZADA');
       const decision = await registrarDecision(conexion, {
         ...datos, resultado: 'AUTORIZADO', motivo: 'ACCESO_AUTORIZADO',
         identidad: {

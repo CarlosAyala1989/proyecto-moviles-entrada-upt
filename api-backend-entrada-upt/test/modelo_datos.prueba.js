@@ -15,6 +15,7 @@ describe('Modelo de datos', () => {
       'dispositivos',
       'intentos_inicio_sesion',
       'migraciones_aplicadas',
+      'notificaciones_usuario',
       'perfiles_academicos',
       'puntos_acceso',
       'registros_acceso',

@@ -14,6 +14,7 @@ import { crearServicioAutenticacion } from './modulos/autenticacion/servicios/au
 import { crearEnrutadorCodigosQr } from './modulos/codigos_qr/rutas/codigos_qr.rutas.js';
 import { crearEnrutadorIdentidadDigital } from './modulos/identidad_digital/rutas/identidad_digital.rutas.js';
 import { crearEnrutadorIngresos } from './modulos/ingresos/rutas/ingresos.rutas.js';
+import { crearEnrutadorNotificaciones } from './modulos/notificaciones/rutas/notificaciones.rutas.js';
 import { crearEnrutadorRegistroEstudiante } from './modulos/registro_estudiante/rutas/registro_estudiante.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
 
@@ -25,6 +26,7 @@ export function crearAplicacion({
   repositorioCodigosQr,
   repositorioIdentidadDigital,
   repositorioIngresos,
+  repositorioNotificaciones,
   repositorioRegistroEstudiante,
   repositorioUsuarios,
   servicioGoogle,
@@ -91,6 +93,13 @@ export function crearAplicacion({
     crearEnrutadorIngresos({
       requerirAutenticacion,
       repositorio: repositorioIngresos,
+    }),
+  );
+  aplicacion.use(
+    '/api/notificaciones',
+    crearEnrutadorNotificaciones({
+      requerirAutenticacion,
+      repositorio: repositorioNotificaciones,
     }),
   );
   aplicacion.use(
