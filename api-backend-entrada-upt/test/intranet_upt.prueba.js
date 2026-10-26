@@ -73,6 +73,7 @@ describe('Proveedor de intranet UPT', () => {
           return {
             nombre_apellidos: 'AYALA RAMOS, CARLOS DANIEL',
             codigo: '2022074266',
+            escuela_profesional: 'Ingeniería de Sistemas',
           };
         },
         cerrar: async () => {
@@ -93,6 +94,7 @@ describe('Proveedor de intranet UPT', () => {
     });
     assert.equal(perfil.nombre_apellidos, 'AYALA RAMOS, CARLOS DANIEL');
     assert.equal(perfil.codigo, '2022074266');
+    assert.equal(perfil.escuela_profesional, 'Ingeniería de Sistemas');
     assert.match(perfil.verificacion_intranet_id, /^[0-9a-f-]{36}$/);
     assert.ok(perfil.verificacion_expira_en);
     assert.deepEqual(
@@ -100,6 +102,7 @@ describe('Proveedor de intranet UPT', () => {
       {
         nombre_apellidos: 'AYALA RAMOS, CARLOS DANIEL',
         codigo: '2022074266',
+        escuela_profesional: 'Ingeniería de Sistemas',
       },
     );
     assert.equal(servicio.consumirVerificacion(perfil.verificacion_intranet_id), true);

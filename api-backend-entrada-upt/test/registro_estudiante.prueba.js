@@ -22,6 +22,7 @@ describe('Registro de estudiante: intranet', () => {
           return {
             codigo: datos.codigo,
             nombre_apellidos: 'AYALA RAMOS, CARLOS DANIEL',
+            escuela_profesional: 'Ingeniería de Sistemas',
           };
         },
       },
@@ -55,6 +56,7 @@ describe('Registro de estudiante: intranet', () => {
       .expect(200)
       .expect(({ body }) => {
         assert.equal(body.datos.codigo, '2022074266');
+        assert.equal(body.datos.escuela_profesional, 'Ingeniería de Sistemas');
       });
     assert.deepEqual(verificaciones, [{
       transaccionId: '0664b410-145e-4ef3-8d98-1055d8d57ee9',

@@ -25,6 +25,7 @@ async function eliminarPrueba() {
     [usuario.id],
   );
   await grupoConexiones.query('DELETE FROM sesiones WHERE usuario_id = ?', [usuario.id]);
+  await grupoConexiones.query('DELETE FROM perfiles_academicos WHERE usuario_id = ?', [usuario.id]);
   await grupoConexiones.query(
     'DELETE FROM usuarios_roles WHERE usuario_id = ?',
     [usuario.id],
@@ -42,6 +43,7 @@ after(async () => {
 describe('Persistencia del registro Google', () => {
   it('crea la identidad dual, asigna ESTUDIANTE y emite tokens opacos', async () => {
     let opciones;
+    let escuelaProfesional = 'Ingeniería de Sistemas';
     const servicio = new ServicioGoogleEstudiante({
       configuracion: {
         clientId: 'cliente.apps.googleusercontent.com',
@@ -54,6 +56,7 @@ describe('Persistencia del registro Google', () => {
         obtenerVerificacion: async () => ({
           codigo,
           nombre_apellidos: 'PRUEBA GOOGLE, ZETA ZETA',
+          escuela_profesional: escuelaProfesional,
         }),
         consumirVerificacion: () => true,
       },
@@ -112,6 +115,19 @@ describe('Persistencia del registro Google', () => {
     assert.equal(usuario.identidad_verificada, 1);
     assert.equal(usuario.estado, 'ACTIVO');
     assert.equal(usuario.estado_autorizacion, 'AUTORIZADO');
+    const usuarioId = resultado.sesion.usuario.id;
+    const [perfil] = await grupoConexiones.query(
+      'SELECT escuela FROM perfiles_academicos WHERE usuario_id = ?',
+      [usuarioId],
+    );
+    assert.equal(perfil.escuela, escuelaProfesional);
+    await grupoConexiones.query(
+      `UPDATE perfiles_academicos
+       SET facultad = 'Ingeniería', estado_academico = 'REGULAR', periodo_academico = '2026-II'
+       WHERE usuario_id = ?`,
+      [usuarioId],
+    );
+    escuelaProfesional = 'Ingeniería Civil';
 
     const segundoInicio = await servicio.iniciar({
       verificacionIntranetId: '3832890c-62e9-4714-b17b-68f2a90bce18',
@@ -135,5 +151,32 @@ describe('Persistencia del registro Google', () => {
     );
     assert.equal(cantidades.usuarios, 1);
     assert.equal(cantidades.sesiones, 2);
+    const comprobarPerfil = async () => {
+      const perfiles = await grupoConexiones.query(
+        `SELECT escuela, facultad, estado_academico, periodo_academico
+         FROM perfiles_academicos WHERE usuario_id = ?`,
+        [usuarioId],
+      );
+      assert.equal(perfiles.length, 1);
+      assert.deepEqual({ ...perfiles[0] }, {
+        escuela: 'Ingeniería Civil',
+        facultad: 'Ingeniería',
+        estado_academico: 'REGULAR',
+        periodo_academico: '2026-II',
+      });
+    };
+    await comprobarPerfil();
+    await new RepositorioRegistroEstudianteMariaDb().registrarIdentidadVerificada({
+      codigo,
+      correoInstitucional: correo,
+      nombres: 'ZETA ZETA',
+      apellidos: 'PRUEBA GOOGLE',
+      nombreGoogle: 'ZETA ZETA PRUEBA GOOGLE',
+      nombreIntranet: 'PRUEBA GOOGLE, ZETA ZETA',
+      googleSub,
+      fotoUrl: null,
+      escuelaProfesional: null,
+    });
+    await comprobarPerfil();
   });
 });

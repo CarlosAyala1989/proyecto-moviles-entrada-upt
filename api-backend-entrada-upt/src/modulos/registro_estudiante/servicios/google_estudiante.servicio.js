@@ -268,6 +268,7 @@ export class ServicioGoogleEstudiante {
         ...identidad,
         nombres: nombresGoogle,
         apellidos: apellidosGoogle,
+        escuelaProfesional: perfilIntranet.escuela_profesional,
         googleSub: payload.sub,
         fotoUrl: typeof payload.picture === 'string' ? payload.picture : null,
       });

@@ -32,7 +32,17 @@ it('espera el redireccionamiento antes de cerrar el aviso y abrir Alumno', async
         </div>
       `);
     } else if (solicitud.url === '/alumno') {
-      respuesta.end('<h1>APELLIDO PRUEBA, NOMBRE PRUEBA&nbsp;&nbsp;</h1><h1>1111222233&nbsp;&nbsp;</h1>');
+      respuesta.end(`
+        <h1>APELLIDO PRUEBA, NOMBRE PRUEBA&nbsp;&nbsp;</h1><h1>1111222233&nbsp;&nbsp;</h1>
+        <a href="?redir=notas">Notas</a>
+        <a href="?ir="> </a>
+        <script>
+          setTimeout(() => {
+            document.body.insertAdjacentHTML('beforeend',
+              '<a href="?n=academico&amp;ir=123"><span>Ingeniería</span> de&nbsp; Sistemas</a>');
+          }, 300);
+        </script>
+      `);
     } else {
       respuesta.end(`
         <form action="/login" method="post">
@@ -69,8 +79,26 @@ it('espera el redireccionamiento antes de cerrar el aviso y abrir Alumno', async
     assert.deepEqual(perfil, {
       nombre_apellidos: 'APELLIDO PRUEBA, NOMBRE PRUEBA',
       codigo: '1111222233',
+      escuela_profesional: 'Ingeniería de Sistemas',
     });
     assert.ok(rutas.includes('/alumno'));
+
+    await pagina.setContent(`
+      <h1>APELLIDO PRUEBA, NOMBRE PRUEBA</h1><h1>1111222233</h1>
+      <a href="?redir=notas">Notas</a>
+      <a href="?ir=123" style="display:none">Ingeniería de Sistemas</a>
+    `);
+    assert.equal((await sesion.leerPerfilActual()).escuela_profesional, 'Ingeniería de Sistemas');
+
+    await pagina.setContent(`
+      <h1>APELLIDO PRUEBA, NOMBRE PRUEBA</h1><h1>1111222233</h1>
+      <a href="?redir=notas">Notas</a>
+    `);
+    assert.deepEqual(await sesion.leerPerfilActual(), {
+      nombre_apellidos: 'APELLIDO PRUEBA, NOMBRE PRUEBA',
+      codigo: '1111222233',
+      escuela_profesional: null,
+    });
   } finally {
     await navegador?.close();
     await new Promise((resolver) => servidor.close(resolver));

@@ -189,9 +189,35 @@ export class SesionIntranetNavegador {
 
   async leerPerfilActual() {
     const texto = await this.pagina.locator('body').innerText();
-    return extraerPerfilTexto(texto)
+    const perfil = extraerPerfilTexto(texto)
       ?? extraerPerfilIntranet(await this.pagina.content())
       ?? await extraerPerfilConOcr(this.pagina);
+    if (!perfil) return null;
+
+    // El menú académico puede aparecer después del encabezado. El parámetro
+    // ir identifica el enlace de la escuela en ScrapEstudiante.py.
+    const resultado = await this.pagina.waitForFunction(() => {
+      const candidatos = [...document.querySelectorAll('a[href]')].filter((enlace) => {
+        try {
+          return new URL(enlace.href).searchParams.has('ir');
+        } catch {
+          return false;
+        }
+      });
+      // Como en el Python, primero se consulta el texto visible y luego el
+      // contenido HTML cuando la escuela está en un menú contraído.
+      for (const atributo of ['innerText', 'textContent']) {
+        for (const enlace of candidatos) {
+          if (atributo === 'innerText' && enlace.getClientRects().length === 0) continue;
+          const nombre = enlace[atributo]?.replace(/\s+/gu, ' ').trim();
+          if (nombre) return nombre;
+        }
+      }
+      return null;
+    }, null, { timeout: 10_000 }).catch(() => null);
+    const escuelaProfesional = await resultado?.jsonValue() ?? null;
+    await resultado?.dispose();
+    return { ...perfil, escuela_profesional: escuelaProfesional };
   }
 
   async verificar({ codigo, contrasena, captcha }) {
@@ -210,7 +236,7 @@ export class SesionIntranetNavegador {
   }
 
   async abrirPerfilEstudiante() {
-    // Selector literal usado por ScrapEstudiante.py. No equivale a tomar el
+    // Selector del menú observado en la intranet. No equivale a tomar el
     // enlace número 17: nth-child cuenta todos los hijos de #menu-block.
     const opcionPerfil = this.pagina.locator('#menu-block > a:nth-child(17)');
     try {

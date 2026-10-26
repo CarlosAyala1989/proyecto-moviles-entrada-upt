@@ -19,6 +19,7 @@ function preparar({ payload } = {}) {
       obtenerVerificacion: async () => ({
         codigo: '2022074266',
         nombre_apellidos: 'AYALA RAMOS, CARLOS DANIEL',
+        escuela_profesional: 'Ingeniería de Sistemas',
       }),
       consumirVerificacion: () => {
         verificacionConsumida = true;
@@ -127,6 +128,7 @@ describe('Registro de estudiante con Google Workspace', () => {
     assert.equal(escenario.usuario().googleSub, 'google-sub-estable');
     assert.equal(escenario.usuario().nombres, 'CARLOS DANIEL');
     assert.equal(escenario.usuario().apellidos, 'AYALA RAMOS');
+    assert.equal(escenario.usuario().escuelaProfesional, 'Ingeniería de Sistemas');
     assert.equal(escenario.consumida(), true);
 
     const estado = escenario.servicio.consultarEstado(inicio.transaccion_id);

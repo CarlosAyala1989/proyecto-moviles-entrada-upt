@@ -19,6 +19,7 @@ export class RepositorioRegistroEstudianteMariaDb {
     nombreIntranet,
     googleSub,
     fotoUrl,
+    escuelaProfesional,
   }) {
     const conexion = await grupoConexiones.getConnection();
     try {
@@ -105,6 +106,15 @@ export class RepositorioRegistroEstudianteMariaDb {
           ],
         );
         usuarioId = resultado.insertId;
+      }
+
+      if (escuelaProfesional) {
+        await conexion.query(
+          `INSERT INTO perfiles_academicos (usuario_id, escuela)
+           VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE escuela = VALUES(escuela)`,
+          [usuarioId, escuelaProfesional],
+        );
       }
 
       await conexion.query(

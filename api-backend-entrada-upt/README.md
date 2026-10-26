@@ -28,6 +28,7 @@ npm run dev
 | Método | Ruta | Resultado esperado |
 | --- | --- | --- |
 | `GET` | `/api` | Información básica de la API. |
+| `POST` | `/api/registro-estudiante/intranet/verificar` | Código, nombre completo y escuela profesional verificados en la intranet. |
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
 | Varios | `/api/autenticacion/*` | Inicio, renovación, consulta y cierre de sesión. |
 | `GET` | `/api/identidad-digital` | Identidad propia obtenida desde la sesión. |
@@ -44,6 +45,15 @@ npm run dev
 
 `/api/health` se conserva temporalmente como alias de `/api/salud` para no
 interrumpir clientes locales ya configurados.
+
+El campo adicional `datos.escuela_profesional` contiene el nombre del enlace
+académico cuyo URL incluye el parámetro `ir`, por ejemplo `Ingeniería de Sistemas`.
+La API espera hasta diez segundos a que aparezca; devuelve `null` si no está
+disponible. La extracción de nombre y código conserva sus alternativas DOM/OCR.
+Al completar la verificación Google, se crea o actualiza `perfiles_academicos.escuela`
+con ese valor, conservando facultad, estado y periodo académico. Si la escuela
+no está disponible, se conserva cualquier perfil académico previo. No requiere
+cambios de esquema ni migraciones adicionales.
 
 El contrato detallado para la aplicación de estudiante, con parámetros, tipos,
 respuestas y reglas de generación, está en
