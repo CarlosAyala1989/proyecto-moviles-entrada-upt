@@ -296,6 +296,7 @@ Respuesta exitosa: `200 OK`.
   "datos": {
     "codigo": "2022074266",
     "nombre_apellidos": "AYALA RAMOS, CARLOS DANIEL",
+    "escuela_profesional": "Ingeniería de Sistemas",
     "verificacion_intranet_id": "8bcdbcea-0682-4c77-a828-21855d6bcdfa",
     "verificacion_expira_en": "2026-09-17T15:40:00.000Z"
   }
@@ -306,6 +307,7 @@ Respuesta exitosa: `200 OK`.
 | --- | --- | --- | --- |
 | `datos.codigo` | `string` | Sí | Código de 10 dígitos confirmado por la intranet. |
 | `datos.nombre_apellidos` | `string` | Sí | Nombre devuelto por la intranet, normalmente `APELLIDOS, NOMBRES`. |
+| `datos.escuela_profesional` | `string` o `null` | Sí | Escuela extraída del enlace académico con parámetro `ir`; `null` si no está disponible. Se guarda al completar el registro Google. |
 | `datos.verificacion_intranet_id` | `string` UUID | Sí | Identificador temporal para iniciar Google. |
 | `datos.verificacion_expira_en` | `string` ISO 8601 | Sí | La autorización temporal dura aproximadamente diez minutos. |
 

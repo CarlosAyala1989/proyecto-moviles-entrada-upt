@@ -84,96 +84,100 @@ class _EstadoPantallaVerificacionIntranet
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Ingresa personalmente tu código, contraseña de intranet y '
-                      'el número de la imagen. No se guardarán en el dispositivo.',
+                    Text(
+                      perfil == null
+                          ? 'Ingresa personalmente tu código, contraseña de intranet y '
+                                'el número de la imagen. No se guardarán en el dispositivo.'
+                          : 'Revisa los datos obtenidos de la intranet antes de continuar con Google.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _codigo,
-                      enabled: !controlador.estaProcesando,
-                      keyboardType: TextInputType.number,
-                      maxLength: 10,
-                      decoration: const InputDecoration(
-                        labelText: 'Código institucional',
-                        prefixIcon: Icon(Icons.badge_outlined),
+                    if (perfil == null) ...[
+                      TextFormField(
+                        controller: _codigo,
+                        enabled: !controlador.estaProcesando,
+                        keyboardType: TextInputType.number,
+                        maxLength: 10,
+                        decoration: const InputDecoration(
+                          labelText: 'Código institucional',
+                          prefixIcon: Icon(Icons.badge_outlined),
+                        ),
+                        validator: (valor) =>
+                            RegExp(r'^\d{10}$').hasMatch(valor ?? '')
+                            ? null
+                            : 'Ingresa los 10 dígitos de tu código.',
                       ),
-                      validator: (valor) =>
-                          RegExp(r'^\d{10}$').hasMatch(valor ?? '')
-                          ? null
-                          : 'Ingresa los 10 dígitos de tu código.',
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _contrasena,
-                      enabled: !controlador.estaProcesando,
-                      keyboardType: TextInputType.number,
-                      obscureText: _ocultarContrasena,
-                      maxLength: 6,
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña de intranet',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          tooltip: _ocultarContrasena
-                              ? 'Mostrar contraseña'
-                              : 'Ocultar contraseña',
-                          onPressed: () => setState(
-                            () => _ocultarContrasena = !_ocultarContrasena,
-                          ),
-                          icon: Icon(
-                            _ocultarContrasena
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _contrasena,
+                        enabled: !controlador.estaProcesando,
+                        keyboardType: TextInputType.number,
+                        obscureText: _ocultarContrasena,
+                        maxLength: 6,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña de intranet',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            tooltip: _ocultarContrasena
+                                ? 'Mostrar contraseña'
+                                : 'Ocultar contraseña',
+                            onPressed: () => setState(
+                              () => _ocultarContrasena = !_ocultarContrasena,
+                            ),
+                            icon: Icon(
+                              _ocultarContrasena
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
                           ),
                         ),
+                        validator: (valor) =>
+                            RegExp(r'^\d{1,6}$').hasMatch(valor ?? '')
+                            ? null
+                            : 'Ingresa tu contraseña numérica.',
                       ),
-                      validator: (valor) =>
-                          RegExp(r'^\d{1,6}$').hasMatch(valor ?? '')
-                          ? null
-                          : 'Ingresa tu contraseña numérica.',
-                    ),
-                    const SizedBox(height: 12),
-                    if (captcha != null)
-                      Semantics(
-                        label: 'Imagen de seguridad de la intranet',
-                        image: true,
-                        child: Image.memory(
-                          base64Decode(captcha.imagenBase64),
-                          height: 70,
-                          filterQuality: FilterQuality.none,
+                      const SizedBox(height: 12),
+                      if (captcha != null)
+                        Semantics(
+                          label: 'Imagen de seguridad de la intranet',
+                          image: true,
+                          child: Image.memory(
+                            base64Decode(captcha.imagenBase64),
+                            height: 70,
+                            filterQuality: FilterQuality.none,
+                          ),
+                        )
+                      else if (controlador.estaProcesando)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        OutlinedButton.icon(
+                          onPressed: controlador.cargarCaptcha,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Cargar imagen'),
                         ),
-                      )
-                    else if (controlador.estaProcesando)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      OutlinedButton.icon(
-                        onPressed: controlador.cargarCaptcha,
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: controlador.estaProcesando
+                            ? null
+                            : controlador.cargarCaptcha,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Cargar imagen'),
+                        label: const Text('Cambiar imagen'),
                       ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: controlador.estaProcesando
-                          ? null
-                          : controlador.cargarCaptcha,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Cambiar imagen'),
-                    ),
-                    TextFormField(
-                      controller: _textoCaptcha,
-                      enabled: !controlador.estaProcesando && captcha != null,
-                      keyboardType: TextInputType.number,
-                      maxLength: 5,
-                      decoration: const InputDecoration(
-                        labelText: 'Número de la imagen',
-                        prefixIcon: Icon(Icons.image_outlined),
+                      TextFormField(
+                        controller: _textoCaptcha,
+                        enabled: !controlador.estaProcesando && captcha != null,
+                        keyboardType: TextInputType.number,
+                        maxLength: 5,
+                        decoration: const InputDecoration(
+                          labelText: 'Número de la imagen',
+                          prefixIcon: Icon(Icons.image_outlined),
+                        ),
+                        validator: (valor) =>
+                            RegExp(r'^\d{1,5}$').hasMatch(valor ?? '')
+                            ? null
+                            : 'Ingresa el número mostrado en la imagen.',
                       ),
-                      validator: (valor) =>
-                          RegExp(r'^\d{1,5}$').hasMatch(valor ?? '')
-                          ? null
-                          : 'Ingresa el número mostrado en la imagen.',
-                    ),
+                    ],
                     if (controlador.mensajeError case final mensaje?) ...[
                       const SizedBox(height: 16),
                       Text(
@@ -194,32 +198,55 @@ class _EstadoPantallaVerificacionIntranet
                         color: Theme.of(context).colorScheme.primaryContainer,
                         child: Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Text(
-                            'Intranet verificada: ${perfil.nombreApellidos} '
-                            '(${perfil.codigo}).\n\nPaso 2 de 2: usa la cuenta '
-                            'Google institucional que termina en '
-                            '@virtual.upt.pe.',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'Intranet verificada',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 16),
+                              const Text('Nombre completo'),
+                              Text(perfil.nombreApellidos),
+                              const SizedBox(height: 12),
+                              const Text('Código institucional'),
+                              Text(perfil.codigo),
+                              const SizedBox(height: 12),
+                              const Text('Escuela profesional'),
+                              Text(
+                                perfil.escuelaProfesional?.trim().isNotEmpty ==
+                                        true
+                                    ? perfil.escuelaProfesional!
+                                    : 'No disponible en la intranet',
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                     const SizedBox(height: 20),
-                    FilledButton.icon(
-                      onPressed:
-                          controlador.estaProcesando ||
-                              captcha == null ||
-                              perfil != null
-                          ? null
-                          : _verificar,
-                      icon: controlador.estaProcesando
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.verified_user_outlined),
-                      label: const Text('Verificar intranet'),
-                    ),
+                    if (perfil == null)
+                      FilledButton.icon(
+                        onPressed: controlador.estaProcesando || captcha == null
+                            ? null
+                            : _verificar,
+                        icon: controlador.estaProcesando
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.verified_user_outlined),
+                        label: const Text('Verificar intranet'),
+                      ),
                     if (perfil != null) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Paso 2 de 2: usa tu cuenta Google institucional '
+                        'que termina en @virtual.upt.pe.',
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 12),
                       FilledButton.icon(
                         onPressed: controlador.estaProcesando
@@ -234,6 +261,13 @@ class _EstadoPantallaVerificacionIntranet
                               )
                             : const Icon(Icons.account_circle_outlined),
                         label: const Text('Continuar con Google institucional'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: controlador.estaProcesando
+                            ? null
+                            : controlador.cargarCaptcha,
+                        child: const Text('Volver a verificar intranet'),
                       ),
                     ],
                   ],

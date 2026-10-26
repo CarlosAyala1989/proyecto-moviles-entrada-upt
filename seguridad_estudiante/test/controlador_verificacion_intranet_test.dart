@@ -29,6 +29,7 @@ class ClienteRegistroFalso extends ClientePortadorFalso {
   }) async => PerfilIntranet(
     codigo: codigo,
     nombreApellidos: 'AYALA RAMOS, CARLOS DANIEL',
+    escuelaProfesional: 'Ingeniería de Sistemas',
     verificacionId: '8bcdbcea-0682-4c77-a828-21855d6bcdfa',
     verificacionExpiraEn: DateTime.now().toUtc().add(
       const Duration(minutes: 10),
@@ -84,6 +85,12 @@ void main() {
       contrasena: '123456',
       textoCaptcha: '3868',
     );
+    expect(controlador.perfil?.nombreApellidos, 'AYALA RAMOS, CARLOS DANIEL');
+    expect(controlador.perfil?.codigo, '2022074266');
+    expect(controlador.perfil?.escuelaProfesional, 'Ingeniería de Sistemas');
+    expect(abridor.url, isNull);
+    expect(sesion.estaAutenticada, isFalse);
+
     await controlador.iniciarGoogle();
 
     expect(abridor.url?.host, 'accounts.google.com');

@@ -255,11 +255,16 @@ incluso cuando falla el intento. Se recibe `200 OK`:
   "datos": {
     "codigo": "2022074266",
     "nombre_apellidos": "AYALA RAMOS, CARLOS DANIEL",
+    "escuela_profesional": "Ingeniería de Sistemas",
     "verificacion_intranet_id": "8bcdbcea-0682-4c77-a828-21855d6bcdfa",
     "verificacion_expira_en": "2026-09-14T12:10:00.000Z"
   }
 }
 ```
+
+`escuela_profesional` contiene el texto del enlace académico con parámetro `ir`;
+es `null` si la intranet no lo muestra. Al completar Google se guarda en
+`perfiles_academicos.escuela`, sin reemplazar los demás datos académicos.
 
 Errores principales: `CAPTCHA_EXPIRADO` (`410`),
 `CREDENCIALES_INTRANET_INVALIDAS` (`401`) y

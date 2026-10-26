@@ -13,6 +13,18 @@ http.Response respuestaJson(Object datos) => http.Response(
 
 void main() {
   group('Contrato HTTP móvil', () {
+    test('acepta perfiles anteriores o con escuela no disponible', () {
+      final datos = <String, dynamic>{
+        'codigo': '2022074266',
+        'nombre_apellidos': 'AYALA RAMOS, CARLOS DANIEL',
+        'verificacion_intranet_id': '8bcdbcea-0682-4c77-a828-21855d6bcdfa',
+        'verificacion_expira_en': '2026-09-14T12:10:00.000Z',
+      };
+      expect(PerfilIntranet.desdeJson(datos).escuelaProfesional, isNull);
+      datos['escuela_profesional'] = null;
+      expect(PerfilIntranet.desdeJson(datos).escuelaProfesional, isNull);
+    });
+
     test(
       'decodifica las listas de administración y conserva la contraseña al editar un guardia',
       () async {
@@ -75,6 +87,7 @@ void main() {
             return respuestaJson({
               'codigo': '2022074266',
               'nombre_apellidos': 'AYALA RAMOS, CARLOS DANIEL',
+              'escuela_profesional': 'Ingeniería de Sistemas',
               'verificacion_intranet_id':
                   '8bcdbcea-0682-4c77-a828-21855d6bcdfa',
               'verificacion_expira_en': '2026-09-14T12:10:00.000Z',
@@ -104,6 +117,8 @@ void main() {
         expect(cuerpo['contrasena'], '123456');
         expect(cuerpo['captcha'], '3868');
         expect(perfil.nombreApellidos, 'AYALA RAMOS, CARLOS DANIEL');
+        expect(perfil.codigo, '2022074266');
+        expect(perfil.escuelaProfesional, 'Ingeniería de Sistemas');
       },
     );
 
