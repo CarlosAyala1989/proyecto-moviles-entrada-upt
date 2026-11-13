@@ -1,5 +1,6 @@
 import { grupoConexiones } from '../../../config/database.js';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
+import { exigirIdentidadSinBloqueo } from '../../control_acceso/politicas_acceso.js';
 
 async function consultarRoles(conexion, usuarioId) {
   const filas = await conexion.query(
@@ -202,6 +203,7 @@ export class RepositorioAutenticacionMariaDb {
       await conexion.query('SELECT id FROM usuarios WHERE id = ? FOR UPDATE', [
         usuario.id,
       ]);
+      await exigirIdentidadSinBloqueo(conexion, usuario.id);
       const resultado = await conexion.query(
         `INSERT INTO sesiones (
           usuario_id,
@@ -298,6 +300,7 @@ export class RepositorioAutenticacionMariaDb {
     }
 
     const roles = await consultarRoles(grupoConexiones, fila.usuario_id);
+    await exigirIdentidadSinBloqueo(grupoConexiones, fila.usuario_id);
     return {
       sesionId: fila.sesion_id,
       usuario: usuarioPublico(fila, roles),
@@ -340,6 +343,7 @@ export class RepositorioAutenticacionMariaDb {
         await conexion.rollback();
         throw errorTokenRenovacion();
       }
+      await exigirIdentidadSinBloqueo(conexion, fila.usuario_id);
       if (!fila.renovacion_vigente) {
         await conexion.query(
           "UPDATE sesiones SET estado = 'EXPIRADA' WHERE id = ?",

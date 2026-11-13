@@ -304,7 +304,7 @@ async function ejecutarClienteDart() {
     `--dart-define=USUARIO_SEGURIDAD_INTEGRACION=${codigos.seguridad}`,
     `--dart-define=CONTRASENA_SEGURIDAD_INTEGRACION=${contrasenas.seguridad}`,
     `--dart-define=PUNTO_ACCESO_INTEGRACION=${codigos.punto}`,
-    'integracion/flujo_movil_backend_test.dart',
+    path.join(directorioBackend, 'test/cliente_dart/flujo_seguridad_test.dart'),
   ];
   const codigoSalida = await new Promise((resolver, rechazar) => {
     const procesoFlutter = spawn('flutter', argumentos, {

@@ -41,7 +41,7 @@ export function interpretarConfiguracionCodigosQr(configuracion) {
       configuracion,
       'PRECISION_MAXIMA_UBICACION_METROS',
     ),
-    unSoloUso: valorUnSoloUso === 'true',
+    unSoloUso: true,
   };
 }
 

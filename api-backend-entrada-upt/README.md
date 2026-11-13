@@ -25,10 +25,15 @@ npm run dev
 
 ## Endpoints disponibles
 
+Las [guías de integración de seguridad por issue](docs/seguridad/README.md)
+documentan los contratos nuevos de búsqueda controlada, incidencias, turnos,
+reglas y bloqueos, y los cambios de privacidad y resultado del escaneo.
+
 | Método | Ruta | Resultado esperado |
 | --- | --- | --- |
 | `GET` | `/api` | Información básica de la API. |
-| `POST` | `/api/registro-estudiante/intranet/verificar` | Código, nombre completo y escuela profesional verificados en la intranet. |
+| `GET` | `/api/registro-estudiante/intranet/captcha` | Imagen CAPTCHA y transacción de intranet. |
+| `POST` | `/api/registro-estudiante/intranet/verificar` | Verificación de identidad y consulta opcional de datos académicos y pagos. |
 | `GET` | `/api/salud` | `200` cuando MariaDB está disponible. |
 | Varios | `/api/autenticacion/*` | Inicio, renovación, consulta y cierre de sesión. |
 | `GET` | `/api/identidad-digital` | Identidad propia obtenida desde la sesión. |
@@ -54,6 +59,10 @@ Al completar la verificación Google, se crea o actualiza `perfiles_academicos.e
 con ese valor, conservando facultad, estado y periodo académico. Si la escuela
 no está disponible, se conserva cualquier perfil académico previo. No requiere
 cambios de esquema ni migraciones adicionales.
+
+La consulta se activa con `incluir_datos_estudiante: true` en la solicitud de
+verificación. El [contrato de intranet](docs/datos_estudiante_intranet.md)
+detalla la consulta de notas, horario, asistencia, deudas y comprobantes.
 
 El contrato detallado para la aplicación de estudiante, con parámetros, tipos,
 respuestas y reglas de generación, está en

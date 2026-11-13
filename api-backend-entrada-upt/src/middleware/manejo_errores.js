@@ -24,7 +24,7 @@ export function manejarErrores(error, _solicitud, respuesta, _siguiente) {
     : (estadoHttp >= 500 ? 'Ocurrió un error interno en el servidor.' : error.message);
 
   if (estadoHttp >= 500 && !(error instanceof ErrorHttp)) {
-    console.error(error);
+    console.error({ codigo: 'ERROR_INTERNO', tipo: error.name ?? 'Error' });
   }
 
   respuesta.status(estadoHttp).json({ error: { codigo, mensaje } });

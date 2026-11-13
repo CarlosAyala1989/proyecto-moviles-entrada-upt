@@ -32,8 +32,13 @@ export const esquemaValidarIngreso = z.object({
 
 export const esquemaConsultarIngresosRecientes = z.object({
   limite: z.coerce.number().int().positive().max(50).default(20),
+  pagina: z.coerce.number().int().positive().max(100000).default(1),
+  punto_acceso_codigo: esquemaValidarIngreso.shape.punto_acceso_codigo.optional(),
+  turno_id: z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(),
+  desde: fechaHistorial.optional(),
+  hasta: fechaHistorial.optional(),
   latitud: z.coerce.number().min(-90).max(90),
   longitud: z.coerce.number().min(-180).max(180),
   precision_metros: z.coerce.number().nonnegative().max(10_000),
   obtenida_en: z.string().datetime({ offset: true }),
-}).strict();
+}).strict().refine(({ desde, hasta }) => !desde || !hasta || desde <= hasta);

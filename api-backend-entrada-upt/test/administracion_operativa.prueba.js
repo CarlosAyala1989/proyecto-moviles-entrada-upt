@@ -320,18 +320,19 @@ describe('Administración operativa y trazabilidad', { concurrency: false }, () 
     );
     assert.equal(denegado.usuario, null);
     assert.equal(
-      autorizado.usuario.codigo_institucional,
-      'PRUEBA-OPERATIVA-PORTADOR',
+      autorizado.usuario.codigo_enmascarado,
+      '*'.repeat('PRUEBA-OPERATIVA-PORTADOR'.length - 4) + 'ADOR',
     );
+    assert.equal(Object.hasOwn(autorizado.usuario, 'nombre_completo'), false);
 
     const seguridadB = await request(aplicacion)
       .get('/api/ingresos/recientes')
       .query({ latitud: 12, longitud: 12, precision_metros: 5, obtenida_en: new Date().toISOString() })
       .set('authorization', `Bearer ${tokenSeguridadB}`)
       .expect(200);
-    assert.equal(seguridadB.body.datos.length, 1);
-    assert.equal(seguridadB.body.datos[0].motivo, 'TOKEN_INVALIDO');
-    assert.equal(seguridadB.body.datos[0].usuario, null);
+    // El registro de B pertenece a otra puerta, diferente de su asignación actual.
+    assert.equal(seguridadB.body.datos.length, 0);
+    assert.equal(seguridadB.body.paginacion.total, 0);
   });
 
   it('crea y actualiza puntos de acceso sin borrar el historial', async () => {

@@ -1,5 +1,6 @@
 import { grupoConexiones } from '../../../config/database.js';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
+import { motivoRestriccionAcceso } from '../../control_acceso/politicas_acceso.js';
 import { compararHashes } from '../../../seguridad/codigos_qr.js';
 import { registrarNotificacionesDenegacion } from '../../notificaciones/servicios/notificaciones.servicio.js';
 import {
@@ -33,7 +34,24 @@ const mensajesDecision = {
   UBICACION_ESCANEO_FUERA_DE_ZONA: 'Este equipo está fuera de la zona asignada a la puerta.',
   DISPOSITIVO_NO_VINCULADO: 'El dispositivo que preparó este código ya no está vinculado.',
   CODIGO_OFFLINE_NO_VIGENTE: 'El código del dispositivo no corresponde al momento actual.',
+  IDENTIDAD_BLOQUEADA: 'La identidad tiene una restricción de acceso vigente.',
+  REGLA_ACCESO_DENEGADA: 'Las reglas vigentes no permiten este ingreso.',
+  FUERA_HORARIO_PERMITIDO: 'El ingreso no está permitido en este horario.',
+  DATOS_IDENTIDAD_INCOMPLETOS: 'No hay datos suficientes para confirmar la identidad.',
 };
+
+function identidadMinima(usuario, roles) {
+  return {
+    foto_url: usuario.foto_url,
+    nombre_completo: usuario.nombre_completo,
+    codigo_institucional: usuario.codigo_institucional,
+    tipo_usuario: roles,
+  };
+}
+
+function tieneDatosMinimos(usuario) {
+  return Boolean(usuario?.nombre_completo?.trim() && usuario?.codigo_institucional?.trim());
+}
 
 async function consultarRoles(conexion, usuarioId) {
   const filas = await conexion.query(
@@ -117,6 +135,10 @@ async function registrarDecision(conexion, {
   detalle = {},
   identidad,
 }) {
+  const [turno] = await conexion.query(
+    `SELECT id FROM turnos_seguridad WHERE usuario_seguridad_id = ? AND punto_acceso_id = ?
+     AND cerrado_en IS NULL ORDER BY id DESC LIMIT 1`, [usuarioSeguridadId, puntoAcceso.id],
+  );
   const registro = await conexion.query(
     `INSERT INTO registros_acceso (
       usuario_id,
@@ -127,12 +149,13 @@ async function registrarDecision(conexion, {
       resultado,
       motivo,
       detalle,
+      turno_seguridad_id,
       latitud_escaneo,
       longitud_escaneo,
       precision_escaneo_metros,
       ubicacion_escaneo_obtenida_en,
       distancia_escaneo_metros
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       usuarioId ?? null,
       credencialId ?? null,
@@ -146,6 +169,7 @@ async function registrarDecision(conexion, {
         distancia_calculada_metros: Number(puntoAcceso.distanciaMetros.toFixed(2)),
         ...detalle,
       }),
+      turno?.id ?? null,
       ubicacion.latitud,
       ubicacion.longitud,
       ubicacion.precision_metros,
@@ -167,6 +191,8 @@ async function registrarDecision(conexion, {
     : await conexion.query('SELECT CURRENT_TIMESTAMP(3) AS registrado_en');
 
   return {
+    registroId: registro.insertId,
+    turnoId: turno?.id ?? null,
     resultado,
     motivo,
     mensaje: mensajesDecision[motivo],
@@ -331,6 +357,9 @@ export class RepositorioIngresosMariaDb {
       if (!verificarFirmaOffline(codigo, descifrarSecretoOffline(dispositivo.secreto_qr_cifrado))) {
         return await denegar('INTEGRIDAD_CREDENCIAL_INVALIDA');
       }
+      if (!tieneDatosMinimos(usuario)) return await denegar('DATOS_IDENTIDAD_INCOMPLETOS');
+      const restriccion = await motivoRestriccionAcceso(conexion, usuario, rolesValidos, puntoAcceso.id);
+      if (restriccion) return await denegar(restriccion);
       const [uso] = await conexion.query(
         `SELECT id FROM usos_codigos_offline WHERE dispositivo_id = ? AND paso_tiempo = ?`,
         [codigo.dispositivoId, codigo.pasoTiempo],
@@ -343,14 +372,7 @@ export class RepositorioIngresosMariaDb {
       if (insercion.affectedRows !== 1) return await denegar('CREDENCIAL_YA_UTILIZADA');
       const decision = await registrarDecision(conexion, {
         ...datos, resultado: 'AUTORIZADO', motivo: 'ACCESO_AUTORIZADO',
-        identidad: {
-          foto_url: usuario.foto_url,
-          nombre_completo: usuario.nombre_completo,
-          codigo_institucional: usuario.codigo_institucional,
-          tipo_usuario: rolesValidos,
-          escuela: usuario.escuela,
-          estado_academico: usuario.estado_academico,
-        },
+        identidad: identidadMinima(usuario, rolesValidos),
       });
       await conexion.commit();
       return decision;
@@ -367,7 +389,6 @@ export class RepositorioIngresosMariaDb {
     puntoAccesoCodigo,
     ubicacion,
     usuarioSeguridadId,
-    unSoloUso,
   }) {
     const conexion = await grupoConexiones.getConnection();
     try {
@@ -560,7 +581,17 @@ export class RepositorioIngresosMariaDb {
         return resultado;
       }
 
-      if (unSoloUso) {
+      const restriccion = !tieneDatosMinimos(usuario) ? 'DATOS_IDENTIDAD_INCOMPLETOS'
+        : await motivoRestriccionAcceso(conexion, usuario, rolesValidos, puntoAcceso.id);
+      if (restriccion) {
+        const decision = await decisionDenegada(datosDecision, restriccion);
+        await conexion.commit();
+        return decision;
+      }
+
+      // La validación de ingreso siempre consume la credencial, incluso si una
+      // configuración histórica desactiva la bandera del generador en línea.
+      {
         const consumo = await conexion.query(
           `UPDATE credenciales_acceso
            SET estado = 'USADA', usada_en = CURRENT_TIMESTAMP(3)
@@ -581,14 +612,7 @@ export class RepositorioIngresosMariaDb {
         ...datosDecision,
         resultado: 'AUTORIZADO',
         motivo: 'ACCESO_AUTORIZADO',
-        identidad: {
-          foto_url: usuario.foto_url,
-          nombre_completo: usuario.nombre_completo,
-          codigo_institucional: usuario.codigo_institucional,
-          tipo_usuario: rolesValidos,
-          escuela: usuario.escuela,
-          estado_academico: usuario.estado_academico,
-        },
+        identidad: identidadMinima(usuario, rolesValidos),
       });
       await conexion.commit();
       return resultado;
@@ -600,45 +624,37 @@ export class RepositorioIngresosMariaDb {
     }
   }
 
-  async consultarRecientes({ usuarioSeguridadId, limite }) {
+  async consultarRecientes({ usuarioSeguridadId, puntoId, limite, pagina, turno_id: turnoId, desde, hasta }) {
+    if (turnoId) {
+      const [turno] = await grupoConexiones.query('SELECT id FROM turnos_seguridad WHERE id = ? AND usuario_seguridad_id = ? AND punto_acceso_id = ?', [turnoId, usuarioSeguridadId, puntoId]);
+      if (!turno) throw new ErrorHttp({ codigo: 'TURNO_NO_ENCONTRADO', mensaje: 'No se encontró un turno propio en esta puerta.', estadoHttp: 404 });
+    }
+    const condiciones = ['a.usuario_seguridad_id = ?', 'a.punto_acceso_id = ?'];
+    const parametros = [usuarioSeguridadId, puntoId];
+    for (const [columna, valor, operador] of [
+      ['turno_seguridad_id', turnoId, '='], ['registrado_en', desde, '>='], ['registrado_en', hasta, '<='],
+    ]) {
+      if (valor) { condiciones.push(`a.${columna} ${operador} ?`); parametros.push(valor); }
+    }
+    const filtro = condiciones.join(' AND ');
+    const [conteo] = await grupoConexiones.query(`SELECT COUNT(*) AS total FROM registros_acceso a WHERE ${filtro}`, parametros);
     const filas = await grupoConexiones.query(
-      `SELECT
-        registros_acceso.id,
-        registros_acceso.resultado,
-        registros_acceso.motivo,
-        registros_acceso.registrado_en,
-        puntos_acceso.codigo AS punto_codigo,
-        puntos_acceso.nombre AS punto_nombre,
-        usuarios.id AS usuario_id,
-        usuarios.codigo_institucional,
-        COALESCE(
-          NULLIF(usuarios.nombre_institucional, ''),
-          CONCAT_WS(' ', usuarios.nombres, usuarios.apellidos)
-        ) AS nombre_completo
-       FROM registros_acceso
-       JOIN puntos_acceso
-         ON puntos_acceso.id = registros_acceso.punto_acceso_id
-       LEFT JOIN usuarios ON usuarios.id = registros_acceso.usuario_id
-       WHERE registros_acceso.usuario_seguridad_id = ?
-       ORDER BY registros_acceso.id DESC
-       LIMIT ?`,
-      [usuarioSeguridadId, limite],
+      `SELECT a.id, a.resultado, a.motivo, a.registrado_en, a.turno_seguridad_id,
+       p.codigo AS punto_codigo, p.nombre AS punto_nombre, u.codigo_institucional
+       FROM registros_acceso a JOIN puntos_acceso p ON p.id = a.punto_acceso_id
+       LEFT JOIN usuarios u ON u.id = a.usuario_id
+       WHERE ${filtro} ORDER BY a.id DESC LIMIT ? OFFSET ?`, [...parametros, limite, (pagina - 1) * limite],
     );
-    return filas.map((fila) => ({
-      id: fila.id,
-      resultado: fila.resultado,
-      motivo: fila.motivo,
-      registrado_en: fila.registrado_en,
-      punto_acceso: {
-        codigo: fila.punto_codigo,
-        nombre: fila.punto_nombre,
-      },
-      usuario: fila.resultado === 'AUTORIZADO' && fila.usuario_id
-        ? {
-          codigo_institucional: fila.codigo_institucional,
-          nombre_completo: fila.nombre_completo,
-        }
-        : null,
-    }));
+    return {
+      registros: filas.map((fila) => ({
+        id: fila.id, resultado: fila.resultado, motivo: fila.motivo,
+        registrado_en: fila.registrado_en.toISOString(), turno_id: fila.turno_seguridad_id,
+        punto_acceso: { codigo: fila.punto_codigo, nombre: fila.punto_nombre },
+        usuario: fila.resultado === 'AUTORIZADO' && fila.codigo_institucional
+          ? { codigo_enmascarado: '*'.repeat(Math.max(1, fila.codigo_institucional.length - 4))
+            + fila.codigo_institucional.slice(fila.codigo_institucional.length > 4 ? -4 : -1) } : null,
+      })),
+      paginacion: { pagina, limite, total: conteo.total, total_paginas: Math.ceil(conteo.total / limite) },
+    };
   }
 }

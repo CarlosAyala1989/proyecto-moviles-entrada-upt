@@ -5,6 +5,7 @@ export const esquemaVerificarIntranet = z.object({
   codigo: z.string().regex(/^\d{10}$/, 'El código institucional debe tener diez dígitos.'),
   contrasena: z.string().regex(/^\d{1,6}$/, 'La contraseña de intranet debe ser numérica.'),
   captcha: z.string().regex(/^\d{1,5}$/, 'El CAPTCHA debe ser numérico.'),
+  incluir_datos_estudiante: z.boolean().optional(),
 }).strict();
 
 export const esquemaIniciarGoogle = z.object({

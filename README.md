@@ -14,6 +14,13 @@ Sistema local compuesto por una API y dos aplicaciones Flutter:
 Las aplicaciones nunca se conectan directamente a MariaDB ni deciden un
 ingreso. Toda autorización se resuelve y registra en el backend.
 
+## Guías de integración
+
+- [Cambios de API para escuela profesional](CAMBIOS_API_ESCUELA_PROFESIONAL.md):
+  endpoints afectados, JSON recibidos/enviados y resumen del estudiante antes de Google.
+- [Implementación del QR offline](GUIA_IMPLEMENTACION_QR_OFFLINE.md):
+  vinculación inicial, algoritmo, integración Dart, validación del guardia y límites sin conexión.
+
 ## Configuración local
 
 El backend requiere Node.js 20 o posterior, MariaDB, Chrome o Chromium y

@@ -10,9 +10,11 @@ describe('Modelo de datos', () => {
   it('contiene todas las tablas requeridas por la arquitectura', async () => {
     const tablasEsperadas = [
       'asignaciones_seguridad',
+      'bloqueos_identidad',
       'configuraciones_sistema',
       'credenciales_acceso',
       'dispositivos',
+      'incidencias_seguridad',
       'intentos_inicio_sesion',
       'migraciones_aplicadas',
       'notificaciones_usuario',
@@ -20,8 +22,10 @@ describe('Modelo de datos', () => {
       'puntos_acceso',
       'registros_acceso',
       'registros_auditoria',
+      'reglas_acceso',
       'roles',
       'sesiones',
+      'turnos_seguridad',
       'usos_codigos_offline',
       'usuarios',
       'usuarios_roles',

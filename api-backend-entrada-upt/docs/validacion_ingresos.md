@@ -1,5 +1,10 @@
 # Validación de ingresos
 
+Contrato actualizado el 27 de octubre de 2026: consulta las
+[guías de seguridad por issue](seguridad/README.md) para incidencias, privacidad,
+turnos, bloqueos y reglas. La respuesta añade `registro_id`, `turno_id`,
+`puede_confirmar` y `accion_sugerida`. Ya no se devuelven datos académicos.
+
 El Hito 7 completa en el backend la decisión de acceso mediante un código QR.
 La aplicación de seguridad sólo captura y envía los datos: no interpreta el
 token ni decide si una persona puede ingresar.
@@ -39,6 +44,10 @@ Respuesta autorizada:
 {
   "datos": {
     "resultado": "AUTORIZADO",
+    "registro_id": 125,
+    "turno_id": null,
+    "puede_confirmar": true,
+    "accion_sugerida": "Verifica visualmente la fotografía y los datos antes de permitir el paso.",
     "motivo": "ACCESO_AUTORIZADO",
     "mensaje": "Ingreso autorizado.",
     "registrado_en": "fecha ISO 8601",
@@ -50,9 +59,7 @@ Respuesta autorizada:
       "foto_url": "https://ejemplo.invalid/foto.png",
       "nombre_completo": "Estudiante De Prueba",
       "codigo_institucional": "PRUEBA-EST-001",
-      "tipo_usuario": ["ESTUDIANTE"],
-      "escuela": "Escuela de prueba",
-      "estado_academico": "REGULAR"
+      "tipo_usuario": ["ESTUDIANTE"]
     }
   }
 }
@@ -64,6 +71,10 @@ Una denegación no expone datos de la identidad:
 {
   "datos": {
     "resultado": "DENEGADO",
+    "registro_id": 126,
+    "turno_id": null,
+    "puede_confirmar": false,
+    "accion_sugerida": "Espera la siguiente rotación y escanea el nuevo código.",
     "motivo": "CREDENCIAL_YA_UTILIZADA",
     "mensaje": "El código QR ya fue utilizado.",
     "registrado_en": "fecha ISO 8601",
@@ -116,8 +127,9 @@ respuesta debe ser `DENEGADO` con `CREDENCIAL_YA_UTILIZADA`.
 - Revalida el estado, autorización, identidad, rol y sesión del portador.
 - Comprueba que el punto esté activo y que la lectura de ubicación sea reciente,
   suficientemente precisa y se encuentre dentro de su radio.
-- Bloquea la credencial durante la transacción. Con `QR_UN_SOLO_USO=true`, dos
-  solicitudes simultáneas sólo pueden producir una autorización.
+- Bloquea y consume la credencial durante la transacción. Dos solicitudes
+  simultáneas sólo pueden producir una autorización, incluso si una configuración
+  histórica dejó `QR_UN_SOLO_USO=false`.
 - Registra cada decisión en `registros_acceso`, incluida la huella SHA-256 del
   token, el resultado, el motivo, el punto, el operador y los datos declarados
   de ubicación. Nunca almacena el QR completo.
@@ -142,6 +154,10 @@ Los motivos de denegación implementados son:
 - `PUNTO_ACCESO_INACTIVO`
 - `PUNTO_ACCESO_NO_COINCIDE`
 - `UBICACION_ESCANEO_FUERA_DE_ZONA`
+- `IDENTIDAD_BLOQUEADA`
+- `REGLA_ACCESO_DENEGADA`
+- `FUERA_HORARIO_PERMITIDO`
+- `DATOS_IDENTIDAD_INCOMPLETOS`
 
 ## Errores de petición
 

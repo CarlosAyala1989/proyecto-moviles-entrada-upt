@@ -1,4 +1,5 @@
 import { crearEnrutadorUbicacionSeguridad } from './modulos/seguridad_operativa/seguridad_operativa.js';
+import { crearRutasOperacionSeguridad, crearRutasIncidencias } from './modulos/control_acceso/control_acceso.rutas.js';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -53,8 +54,13 @@ export function crearAplicacion({
   aplicacion.use(express.urlencoded({ extended: false }));
 
   if (registrarSolicitudes) {
-    aplicacion.use(morgan(entornoEjecucion === 'production' ? 'combined' : 'dev'));
+    morgan.token('ruta-segura', (solicitud) => solicitud.route?.path ?? '/ruta-no-encontrada');
+    aplicacion.use(morgan(':method :ruta-segura :status :response-time ms'));
   }
+  aplicacion.use('/api', (_solicitud, respuesta, siguiente) => {
+    respuesta.set('Cache-Control', 'no-store');
+    siguiente();
+  });
 
   aplicacion.get('/api', (_solicitud, respuesta) => {
     respuesta.json({
@@ -67,6 +73,8 @@ export function crearAplicacion({
   // Se conserva temporalmente mientras los clientes migran a la ruta en español.
   aplicacion.use('/api/health', enrutadorSalud);
   aplicacion.use('/api/seguridad', crearEnrutadorUbicacionSeguridad(requerirAutenticacion));
+  aplicacion.use('/api/seguridad', crearRutasOperacionSeguridad(requerirAutenticacion));
+  aplicacion.use('/api/ingresos', crearRutasIncidencias(requerirAutenticacion));
   aplicacion.use(
     '/api/autenticacion',
     crearEnrutadorAutenticacion({

@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 import { chromium } from 'playwright-core';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
+import { consultarDatosEstudianteIntranet } from './datos_estudiante_intranet.servicio.js';
 
 const ejecutarArchivo = promisify(execFile);
 const urlLoginPredeterminada = 'https://net.upt.edu.pe/index2.php?n=a38c138bbf10e4d5d2fbf6cb08bb280b';
@@ -290,6 +291,10 @@ export class SesionIntranetNavegador {
   cerrar() {
     return this.contexto.close();
   }
+
+  consultarDatosEstudiante() {
+    return consultarDatosEstudianteIntranet(this.contexto, this.pagina, this.urlLogin);
+  }
 }
 
 /**
@@ -410,7 +415,9 @@ export class ServicioIntranetUpt {
     }
   }
 
-  async verificarCredenciales({ transaccionId, codigo, contrasena, captcha }) {
+  async verificarCredenciales({
+    transaccionId, codigo, contrasena, captcha, incluirDatosEstudiante = false,
+  }) {
     await this.#limpiarTransaccionesExpiradas();
     const transaccion = this.#transacciones.get(transaccionId);
     if (!transaccion) {
@@ -428,11 +435,15 @@ export class ServicioIntranetUpt {
             422,
           );
         }
+        const datosEstudiante = incluirDatosEstudiante
+          ? await this.#consultarDatosEstudiante(transaccion.sesion)
+          : undefined;
         const verificacionId = randomUUID();
         const expiraEn = this.#ahora() + duracionVerificacionMs;
         this.#verificaciones.set(verificacionId, { perfil, expiraEn });
         return {
           ...perfil,
+          ...(datosEstudiante ? { datos_estudiante: datosEstudiante } : {}),
           verificacion_intranet_id: verificacionId,
           verificacion_expira_en: new Date(expiraEn).toISOString(),
         };
@@ -451,6 +462,14 @@ export class ServicioIntranetUpt {
       );
     } finally {
       await transaccion.sesion.cerrar().catch(() => {});
+    }
+  }
+
+  async #consultarDatosEstudiante(sesion) {
+    try {
+      return await sesion.consultarDatosEstudiante();
+    } catch {
+      return { estado: 'no_disponible', codigo: 'EXTRACCION_INTRANET_NO_DISPONIBLE' };
     }
   }
 

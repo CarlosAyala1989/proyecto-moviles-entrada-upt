@@ -1,5 +1,8 @@
 # Administración operativa e historial
 
+Actualización del 27 de octubre de 2026: el contrato de recientes y turnos está
+en la [guía del issue 18](seguridad/issue_18_validaciones_recientes.md).
+
 El Hito 8 incorpora consultas operativas sobre los registros generados por la
 validación de ingresos y completa la administración de puntos de acceso,
 auditoría y configuraciones utilizadas por el backend.
@@ -170,15 +173,23 @@ asignación a usuarios se realiza con las rutas del Hito 3.
 
 ## Historial reciente de seguridad
 
-Cada operador puede consultar hasta sus últimos 50 intentos:
+Cada operador puede consultar sus intentos paginados (hasta 50 por página),
+limitados a la puerta asignada. Se requieren las coordenadas y fecha actuales
+de ubicación del guardia. También se admiten turno y rango de fechas:
 
 ```bash
 export TOKEN_SEGURIDAD='reemplazar-por-el-token-de-seguridad'
-curl "$API_UPT/ingresos/recientes?limite=20" \
+curl --get "$API_UPT/ingresos/recientes" \
+  --data-urlencode 'limite=20' \
+  --data-urlencode 'latitud=12' \
+  --data-urlencode 'longitud=12' \
+  --data-urlencode 'precision_metros=5' \
+  --data-urlencode "obtenida_en=$MOMENTO_UBICACION" \
   --header "authorization: Bearer $TOKEN_SEGURIDAD"
 ```
 
 La consulta queda limitada al usuario autenticado. Los intentos denegados no
 incluyen identidad, incluso si internamente el token pudo relacionarse con un
-usuario. Los autorizados incluyen únicamente código y nombre para el contexto
-operativo reciente.
+usuario. Los autorizados incluyen únicamente `usuario.codigo_enmascarado`,
+sin nombre ni código completo. Sustituye las coordenadas del ejemplo por el GPS
+actual. El contrato completo está en la guía del issue 18 enlazada arriba.

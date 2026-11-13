@@ -19,11 +19,13 @@ export function crearControladorRegistroEstudiante(servicioIntranet, servicioGoo
       respuesta.json({ datos: await servicioIntranet.obtenerCaptcha() });
     },
     verificarIntranet: async (solicitud, respuesta) => {
+      const cuerpo = solicitud.datosValidados.cuerpo;
       const perfil = await servicioIntranet.verificarCredenciales({
-        transaccionId: solicitud.datosValidados.cuerpo.transaccion_id,
-        codigo: solicitud.datosValidados.cuerpo.codigo,
-        contrasena: solicitud.datosValidados.cuerpo.contrasena,
-        captcha: solicitud.datosValidados.cuerpo.captcha,
+        transaccionId: cuerpo.transaccion_id,
+        codigo: cuerpo.codigo,
+        contrasena: cuerpo.contrasena,
+        captcha: cuerpo.captcha,
+        ...(cuerpo.incluir_datos_estudiante ? { incluirDatosEstudiante: true } : {}),
       });
       respuesta.json({ datos: perfil });
     },

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { crearRutasAdministracionAcceso } from '../../control_acceso/control_acceso.rutas.js';
 import { crearEnrutadorGuardias } from '../../seguridad_operativa/seguridad_operativa.js';
 import { requerirRoles } from '../../../middleware/requerir_roles.js';
 import { crearEnrutadorAdministracionOperativa } from '../../administracion_operativa/rutas/administracion_operativa.rutas.js';
@@ -12,6 +13,7 @@ export function crearEnrutadorAdministracion({
 }) {
   const enrutador = Router();
   enrutador.use(requerirAutenticacion, requerirRoles('ADMINISTRADOR'));
+  enrutador.use(crearRutasAdministracionAcceso());
   enrutador.use(crearEnrutadorGuardias());
   enrutador.use('/mapas/google', crearEnrutadorMapaGoogle());
   enrutador.use(crearEnrutadorAdministracionUsuarios({

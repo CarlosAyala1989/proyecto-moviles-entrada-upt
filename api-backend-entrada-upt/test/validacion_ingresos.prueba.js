@@ -325,7 +325,9 @@ describe('Validación de ingresos mediante códigos QR', { concurrency: false },
     );
     assert.equal(respuesta.body.datos.identidad.nombre_completo, 'Ana María Torres Flores');
     assert.deepEqual(respuesta.body.datos.identidad.tipo_usuario, ['ESTUDIANTE']);
-    assert.equal(respuesta.body.datos.identidad.escuela, 'Ingeniería de Sistemas');
+    assert.equal(Object.hasOwn(respuesta.body.datos.identidad, 'escuela'), false);
+    assert.equal(Object.hasOwn(respuesta.body.datos.identidad, 'estado_academico'), false);
+    assert.equal(respuesta.body.datos.puede_confirmar, true);
     assert.equal(respuesta.body.datos.punto_acceso.codigo, codigoPuntoPrincipal);
     assert.match(respuesta.body.datos.registrado_en, /^\d{4}-\d{2}-\d{2}T/);
     assert.doesNotMatch(JSON.stringify(respuesta.body), /correo_institucional/i);
