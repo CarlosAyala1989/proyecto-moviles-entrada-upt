@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../configuracion/configuracion_api.dart';
 import '../modelos/codigo_qr_temporal.dart';
 import '../modelos/captcha_intranet.dart';
+import '../modelos/datos_estudiante_intranet.dart';
 import '../modelos/estado_google_oauth.dart';
 import '../modelos/identidad_digital.dart';
 import '../modelos/inicio_google_oauth.dart';
@@ -23,6 +24,7 @@ import 'excepcion_api.dart';
 class ClienteApi
     implements
         ContratoClienteApi,
+        ContratoConsultaIntranet,
         ContratoControlSeguridad,
         ContratoAdministracion,
         ContratoPreparacionOffline {
@@ -193,6 +195,50 @@ class ClienteApi
     required String codigo,
     required String contrasena,
     required String captcha,
+  }) async => PerfilIntranet.desdeJson(
+    await _verificarIntranet(
+      transaccionId: transaccionId,
+      codigo: codigo,
+      contrasena: contrasena,
+      captcha: captcha,
+    ),
+  );
+
+  @override
+  Future<DatosEstudianteIntranet> consultarDatosEstudianteIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
+  }) async {
+    final datos = await _verificarIntranet(
+      transaccionId: transaccionId,
+      codigo: codigo,
+      contrasena: contrasena,
+      captcha: captcha,
+      incluirDatosEstudiante: true,
+    );
+    if (datos['codigo'] != codigo) {
+      throw const ExcepcionApi(
+        codigo: 'CODIGO_INTRANET_NO_COINCIDE',
+        mensaje: 'El código de la intranet no coincide con el de tu perfil.',
+      );
+    }
+    if (datos['datos_estudiante'] case final Map<String, dynamic> consulta) {
+      return DatosEstudianteIntranet.desdeJson(consulta);
+    }
+    throw const ExcepcionApi(
+      codigo: 'RESPUESTA_INVALIDA',
+      mensaje: 'La API no devolvió los datos de la consulta de intranet.',
+    );
+  }
+
+  Future<Map<String, dynamic>> _verificarIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
+    bool incluirDatosEstudiante = false,
   }) async {
     final respuesta = await _solicitar(
       metodo: 'POST',
@@ -202,10 +248,11 @@ class ClienteApi
         'codigo': codigo,
         'contrasena': contrasena,
         'captcha': captcha,
+        if (incluirDatosEstudiante) 'incluir_datos_estudiante': true,
       },
       tiempoEspera: ConfiguracionApi.duracionMaximaVerificacionIntranet,
     );
-    return PerfilIntranet.desdeJson(_datos(respuesta));
+    return _datos(respuesta);
   }
 
   @override

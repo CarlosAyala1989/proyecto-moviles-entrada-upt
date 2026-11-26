@@ -5,6 +5,7 @@ import '../controladores/controlador_identidad_qr.dart';
 import '../controladores/controlador_verificacion_intranet.dart';
 import '../navegacion/rutas_estudiante.dart';
 import '../pantallas/pantalla_codigo_qr.dart';
+import '../pantallas/pantalla_consulta_intranet.dart';
 import '../pantallas/pantalla_identidad_digital.dart';
 import '../pantallas/pantalla_inicio_estudiante.dart';
 import '../pantallas/pantalla_inicio_sesion.dart';
@@ -16,12 +17,14 @@ class AplicacionEstudiante extends StatelessWidget {
     required this.controladorSesion,
     required this.controladorIdentidadQr,
     required this.controladorVerificacionIntranet,
+    required this.clienteConsultaIntranet,
     super.key,
   });
 
   final ControladorSesion controladorSesion;
   final ControladorIdentidadQr controladorIdentidadQr;
   final ControladorVerificacionIntranet controladorVerificacionIntranet;
+  final ContratoConsultaIntranet clienteConsultaIntranet;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +36,25 @@ class AplicacionEstudiante extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: construirTemaUpt(),
         routes: {
-          RutasEstudiante.identidad: (_) =>
-              PantallaIdentidadDigital(controlador: controladorIdentidadQr),
+          RutasEstudiante.identidad: (_) {
+            final usuario = controladorSesion.sesion?.usuario;
+            final codigo = usuario?.codigoInstitucional;
+            return PantallaIdentidadDigital(
+              controlador: controladorIdentidadQr,
+              abrirConsultaIntranet:
+                  usuario?.roles.contains('ESTUDIANTE') == true &&
+                      RegExp(r'^\d{10}$').hasMatch(codigo ?? '')
+                  ? (context) => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => PantallaConsultaIntranet(
+                          cliente: clienteConsultaIntranet,
+                          codigo: codigo!,
+                        ),
+                      ),
+                    )
+                  : null,
+            );
+          },
           RutasEstudiante.codigoQr: (_) =>
               PantallaCodigoQr(controlador: controladorIdentidadQr),
         },

@@ -18,6 +18,9 @@ import { crearEnrutadorIngresos } from './modulos/ingresos/rutas/ingresos.rutas.
 import { crearEnrutadorNotificaciones } from './modulos/notificaciones/rutas/notificaciones.rutas.js';
 import { crearEnrutadorRegistroEstudiante } from './modulos/registro_estudiante/rutas/registro_estudiante.rutas.js';
 import { enrutadorSalud } from './routes/salud.rutas.js';
+import { crearRutasCuenta } from './modulos/cuenta/cuenta.rutas.js';
+import { RepositorioEliminacionCuenta } from './modulos/cuenta/eliminacion.repositorio.js';
+import { ServicioEliminacionCuenta } from './modulos/cuenta/eliminacion.servicio.js';
 
 export function crearAplicacion({
   configuracionAutenticacion = entorno.autenticacion,
@@ -32,6 +35,8 @@ export function crearAplicacion({
   repositorioUsuarios,
   servicioGoogle,
   servicioIntranet,
+  servicioEliminacion,
+  configuracionEliminacion = entorno.eliminacionCuenta,
   configuracionGoogle = entorno.google,
   registrarSolicitudes = entornoEjecucion !== 'test',
 } = {}) {
@@ -47,6 +52,7 @@ export function crearAplicacion({
   );
 
   aplicacion.disable('x-powered-by');
+  if (process.env.TRUST_PROXY_HOPS === '1') aplicacion.set('trust proxy', 1);
   aplicacion.use(helmet());
   aplicacion.use(cors({ origin: entorno.corsOrigin }));
   aplicacion.use(validarTipoContenidoJson);
@@ -70,6 +76,9 @@ export function crearAplicacion({
   });
 
   aplicacion.use('/api/salud', enrutadorSalud);
+  aplicacion.use('/api/cuenta', crearRutasCuenta(servicioEliminacion ?? new ServicioEliminacionCuenta({
+    repositorio: new RepositorioEliminacionCuenta(), configuracion: configuracionEliminacion,
+  })));
   // Se conserva temporalmente mientras los clientes migran a la ruta en español.
   aplicacion.use('/api/health', enrutadorSalud);
   aplicacion.use('/api/seguridad', crearEnrutadorUbicacionSeguridad(requerirAutenticacion));

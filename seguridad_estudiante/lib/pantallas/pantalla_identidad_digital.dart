@@ -5,9 +5,14 @@ import '../controladores/controlador_identidad_qr.dart';
 import '../navegacion/rutas_estudiante.dart';
 
 class PantallaIdentidadDigital extends StatefulWidget {
-  const PantallaIdentidadDigital({required this.controlador, super.key});
+  const PantallaIdentidadDigital({
+    required this.controlador,
+    this.abrirConsultaIntranet,
+    super.key,
+  });
 
   final ControladorIdentidadQr controlador;
+  final void Function(BuildContext)? abrirConsultaIntranet;
 
   @override
   State<PantallaIdentidadDigital> createState() =>
@@ -35,21 +40,21 @@ class _EstadoPantallaIdentidadDigital extends State<PantallaIdentidadDigital> {
           final segundosBloqueo = widget.controlador.segundosBloqueoReintento;
 
           if (inicial) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (estado.fase == FaseCarga.completada) {
             return _ContenidoIdentidad(
               identidad: estado.datos!,
+              abrirConsultaIntranet: widget.abrirConsultaIntranet,
               alActualizar: () =>
                   widget.controlador.cargarIdentidad(forzar: true),
             );
           }
 
           return _EstadoErrorIdentidad(
-            mensaje: estado.mensaje ?? 'Ocurrió un error al cargar la identidad.',
+            mensaje:
+                estado.mensaje ?? 'Ocurrió un error al cargar la identidad.',
             estaCargando: cargando,
             estaBloqueado: bloqueado,
             segundosBloqueo: segundosBloqueo,
@@ -66,10 +71,12 @@ class _ContenidoIdentidad extends StatelessWidget {
   const _ContenidoIdentidad({
     required this.identidad,
     required this.alActualizar,
+    this.abrirConsultaIntranet,
   });
 
   final IdentidadDigital identidad;
   final Future<void> Function() alActualizar;
+  final void Function(BuildContext)? abrirConsultaIntranet;
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +127,20 @@ class _ContenidoIdentidad extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
+          if (abrirConsultaIntranet case final abrir?) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.school_outlined),
+                title: const Text('Datos académicos y pagos'),
+                subtitle: const Text(
+                  'Consulta tus notas, horario y cuotas en la intranet UPT.',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => abrir(context),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),

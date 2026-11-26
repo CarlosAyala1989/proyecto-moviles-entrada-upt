@@ -18,8 +18,13 @@ class AlmacenSesionFalso implements AlmacenSesion {
   Future<SesionUsuario?> recuperar() async => sesion;
 }
 
-class ClientePortadorFalso implements ContratoClienteApi {
-  ClientePortadorFalso({required this.identidad, required this.codigoQr});
+class ClientePortadorFalso
+    implements ContratoClienteApi, ContratoConsultaIntranet {
+  ClientePortadorFalso({
+    required this.identidad,
+    required this.codigoQr,
+    SesionUsuario? sesion,
+  }) : sesion = sesion ?? crearSesionPortador();
 
   final IdentidadDigital identidad;
   final CodigoQrTemporal codigoQr;
@@ -28,11 +33,19 @@ class ClientePortadorFalso implements ContratoClienteApi {
   int generacionesQr = 0;
   int revocacionesQr = 0;
 
-  final SesionUsuario sesion = crearSesionPortador();
+  final SesionUsuario sesion;
 
   @override
   Future<CaptchaIntranet> obtenerCaptchaIntranet() =>
       throw UnsupportedError('Operación fuera del alcance de esta prueba.');
+
+  @override
+  Future<DatosEstudianteIntranet> consultarDatosEstudianteIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
+  }) => throw UnsupportedError('Operación fuera del alcance de esta prueba.');
 
   @override
   Future<PerfilIntranet> verificarIntranet({
@@ -118,23 +131,24 @@ class ProveedorUbicacionFalso implements ProveedorUbicacion {
   }
 }
 
-UsuarioSesion crearUsuarioPortador() => const UsuarioSesion(
-  id: 10,
-  codigoInstitucional: 'PRUEBA-EST-001',
-  correoInstitucional: 'estudiante@example.invalid',
-  nombres: 'María Elena',
-  apellidos: 'Pérez Quispe',
-  roles: ['ESTUDIANTE'],
-);
+UsuarioSesion crearUsuarioPortador({String codigo = 'PRUEBA-EST-001'}) =>
+    UsuarioSesion(
+      id: 10,
+      codigoInstitucional: codigo,
+      correoInstitucional: 'estudiante@example.invalid',
+      nombres: 'María Elena',
+      apellidos: 'Pérez Quispe',
+      roles: ['ESTUDIANTE'],
+    );
 
-SesionUsuario crearSesionPortador() {
+SesionUsuario crearSesionPortador({String codigo = 'PRUEBA-EST-001'}) {
   final ahora = DateTime.now().toUtc();
   return SesionUsuario(
     tokenAcceso: 'token-acceso-prueba',
     tokenRenovacion: 'token-renovacion-prueba',
     tokenAccesoExpiraEn: ahora.add(const Duration(days: 1)),
     tokenRenovacionExpiraEn: ahora.add(const Duration(days: 7)),
-    usuario: crearUsuarioPortador(),
+    usuario: crearUsuarioPortador(codigo: codigo),
   );
 }
 

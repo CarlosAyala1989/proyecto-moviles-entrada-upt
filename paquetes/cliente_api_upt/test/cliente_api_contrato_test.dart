@@ -116,11 +116,51 @@ void main() {
         );
         expect(cuerpo['contrasena'], '123456');
         expect(cuerpo['captcha'], '3868');
+        expect(cuerpo, isNot(contains('incluir_datos_estudiante')));
         expect(perfil.nombreApellidos, 'AYALA RAMOS, CARLOS DANIEL');
         expect(perfil.codigo, '2022074266');
         expect(perfil.escuelaProfesional, 'Ingeniería de Sistemas');
       },
     );
+
+    test('solicita la extracción solo en la consulta del perfil', () async {
+      final cliente = ClienteApi(
+        urlBase: 'https://acceso.example.invalid/api',
+        clienteHttp: MockClient((solicitud) async {
+          expect(
+            solicitud.url.path,
+            '/api/registro-estudiante/intranet/verificar',
+          );
+          expect(jsonDecode(solicitud.body), {
+            'transaccion_id': 'capt-1',
+            'codigo': '1111222233',
+            'contrasena': '123456',
+            'captcha': '3868',
+            'incluir_datos_estudiante': true,
+          });
+          return respuestaJson({
+            'codigo': '1111222233',
+            'datos_estudiante': {
+              'estado': 'parcial',
+              'economia_inicio': {'estado': 'leida', 'total': '200.50'},
+              'pasarela': {'estado': 'requiere_autenticacion'},
+            },
+          });
+        }),
+      );
+      final datos = await cliente.consultarDatosEstudianteIntranet(
+        transaccionId: 'capt-1',
+        codigo: '1111222233',
+        contrasena: '123456',
+        captcha: '3868',
+      );
+      expect(datos.estado, 'parcial');
+      expect(datos.secciones[SeccionIntranet.pagos]?.total, '200.50');
+      expect(
+        datos.secciones[SeccionIntranet.pasarela]?.estado,
+        'requiere_autenticacion',
+      );
+    });
 
     test('inicia Google OAuth y consulta la sesión final', () async {
       final solicitudes = <http.Request>[];

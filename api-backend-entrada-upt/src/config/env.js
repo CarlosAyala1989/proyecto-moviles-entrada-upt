@@ -97,6 +97,14 @@ export const entorno = Object.freeze({
   googleMaps: {
     apiKey: process.env.GOOGLE_MAPS_API_KEY ?? '',
   },
+  eliminacionCuenta: {
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID ?? '',
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '',
+    redirectUri: process.env.GOOGLE_ELIMINACION_REDIRECT_URI ?? '',
+    sitioPublico: process.env.SITIO_PUBLICO_URL ?? '',
+    dominio: (process.env.GOOGLE_WORKSPACE_DOMAIN ?? 'virtual.upt.pe').toLowerCase(),
+    permitirLocal: process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development',
+  },
   db: {
     host: process.env.DB_HOST,
     port: enteroPositivo(process.env.DB_PORT, 'DB_PORT'),

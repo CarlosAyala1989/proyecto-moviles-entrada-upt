@@ -1,5 +1,6 @@
 import { grupoConexiones } from '../../../config/database.js';
 import { ErrorHttp } from '../../../middleware/manejo_errores.js';
+import { exigirRegistroSinRestriccion } from '../../../seguridad/restricciones_identidad_eliminada.js';
 
 function errorConflicto() {
   return new ErrorHttp({
@@ -78,6 +79,7 @@ export class RepositorioRegistroEstudianteMariaDb {
           ],
         );
       } else {
+        await exigirRegistroSinRestriccion(conexion, codigo);
         const resultado = await conexion.query(
           `INSERT INTO usuarios (
              codigo_institucional,

@@ -1,5 +1,6 @@
 export 'configuracion/configuracion_api.dart';
 export 'modelos/captcha_intranet.dart';
+export 'modelos/datos_estudiante_intranet.dart';
 export 'modelos/codigo_qr_temporal.dart';
 export 'modelos/vinculacion_qr_offline.dart';
 export 'modelos/estado_google_oauth.dart';

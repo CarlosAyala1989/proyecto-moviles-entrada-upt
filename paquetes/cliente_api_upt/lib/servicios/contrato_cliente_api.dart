@@ -1,5 +1,6 @@
 import '../modelos/codigo_qr_temporal.dart';
 import '../modelos/captcha_intranet.dart';
+import '../modelos/datos_estudiante_intranet.dart';
 import '../modelos/estado_google_oauth.dart';
 import '../modelos/identidad_digital.dart';
 import '../modelos/inicio_google_oauth.dart';
@@ -40,5 +41,15 @@ abstract interface class ContratoClienteApi {
     String tokenAcceso, {
     int limite = 20,
     UbicacionReportada? ubicacion,
+  });
+}
+
+abstract interface class ContratoConsultaIntranet {
+  Future<CaptchaIntranet> obtenerCaptchaIntranet();
+  Future<DatosEstudianteIntranet> consultarDatosEstudianteIntranet({
+    required String transaccionId,
+    required String codigo,
+    required String contrasena,
+    required String captcha,
   });
 }

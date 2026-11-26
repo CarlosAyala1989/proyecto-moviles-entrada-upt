@@ -63,6 +63,7 @@ Future<void> main() async {
       controladorSesion: controladorSesion,
       controladorIdentidadQr: controladorIdentidadQr,
       controladorVerificacionIntranet: controladorVerificacionIntranet,
+      clienteConsultaIntranet: clienteApi,
     ),
   );
 }
