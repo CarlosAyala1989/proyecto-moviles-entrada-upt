@@ -6,7 +6,7 @@ import request from 'supertest';
 import { crearAplicacion } from '../src/app.js';
 import { grupoConexiones } from '../src/config/database.js';
 
-const app = crearAplicacion({ entornoEjecucion: 'test' });
+const app = crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test' });
 const sufijo = randomBytes(4).toString('hex').toUpperCase();
 const usuarioAdmin = `PRUEBA-GEO-ADMIN-${sufijo}`;
 const usuarioGuardia = `PRUEBA-GEO-GUARD-${sufijo}`;

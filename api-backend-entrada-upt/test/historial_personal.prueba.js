@@ -9,7 +9,7 @@ import { calcularHashToken } from '../src/seguridad/tokens.js';
 
 const sufijo = randomBytes(4).toString('hex').toUpperCase();
 const contrasena = 'Historial-Personal!2026';
-const aplicacion = crearAplicacion({ entornoEjecucion: 'test' });
+const aplicacion = crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test' });
 const usuarios = new Map();
 const registros = [];
 const rolesPrueba = {

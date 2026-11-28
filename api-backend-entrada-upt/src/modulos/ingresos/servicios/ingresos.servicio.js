@@ -49,7 +49,7 @@ function normalizarResultado(resultado) {
   };
 }
 
-export function crearServicioIngresos(repositorio) {
+export function crearServicioIngresos(repositorio, { sinGeocerca = false } = {}) {
   return {
     consultarHistorialPersonal: (consulta) => repositorio.consultarHistorialPersonal(consulta),
 
@@ -59,22 +59,22 @@ export function crearServicioIngresos(repositorio) {
       ubicacion,
       usuarioSeguridadId,
     }) => {
-      await comprobarUbicacionSeguridad(usuarioSeguridadId, ubicacion, puntoAccesoCodigo);
+      await comprobarUbicacionSeguridad(usuarioSeguridadId, ubicacion, puntoAccesoCodigo, { sinGeocerca });
       const configuracion = interpretarConfiguracionCodigosQr(
         await repositorio.consultarConfiguracion(),
       );
-      validarMomentoYPrecision(ubicacion, configuracion);
+      if (!sinGeocerca) validarMomentoYPrecision(ubicacion, configuracion);
 
       const codigoOffline = interpretarCodigoOffline(codigoQr);
       const resultado = await (codigoOffline ? repositorio.validarOffline({
         codigo: { ...codigoOffline, huellaToken: interpretarCodigoQr(codigoQr).huellaToken },
         puntoAccesoCodigo,
-        ubicacion: { ...ubicacion, obtenida_en: new Date(ubicacion.obtenida_en) },
+        ubicacion: sinGeocerca ? {} : { ...ubicacion, obtenida_en: new Date(ubicacion.obtenida_en) },
         usuarioSeguridadId,
       }) : repositorio.validar({
         codigo: interpretarCodigoQr(codigoQr),
         puntoAccesoCodigo,
-        ubicacion: {
+        ubicacion: sinGeocerca ? {} : {
           ...ubicacion,
           obtenida_en: new Date(ubicacion.obtenida_en),
         },
@@ -85,7 +85,7 @@ export function crearServicioIngresos(repositorio) {
     },
 
     consultarRecientes: async ({ usuarioSeguridadId, ubicacion, ...consulta }) => {
-      const asignacion = await comprobarUbicacionSeguridad(usuarioSeguridadId, ubicacion, consulta.punto_acceso_codigo);
+      const asignacion = await comprobarUbicacionSeguridad(usuarioSeguridadId, ubicacion, consulta.punto_acceso_codigo, { sinGeocerca });
       return repositorio.consultarRecientes({ usuarioSeguridadId, ...consulta, puntoId: asignacion.punto_acceso.id });
     },
   };

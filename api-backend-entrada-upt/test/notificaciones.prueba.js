@@ -11,7 +11,7 @@ import { registrarNotificacionesDenegacion } from '../src/modulos/notificaciones
 import { calcularOtpOffline, firmarPasoOffline } from '../src/seguridad/codigos_qr_offline.js';
 import { calcularHashToken } from '../src/seguridad/tokens.js';
 
-const aplicacion = crearAplicacion({ entornoEjecucion: 'test' });
+const aplicacion = crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test' });
 const sufijo = randomBytes(4).toString('hex').toUpperCase();
 const codigoPunto = `ALERTAS-${sufijo}`;
 const contrasena = 'Notificaciones-Prueba!2026';

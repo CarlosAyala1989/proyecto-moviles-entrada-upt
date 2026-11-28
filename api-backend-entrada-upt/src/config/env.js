@@ -44,6 +44,11 @@ if (missingVariables.length > 0) {
   );
 }
 
+// Esta rama no debe migrar ni utilizar por accidente la base de la versión dual.
+if (process.env.NODE_ENV === 'production' && process.env.DB_DATABASE !== 'respaldoseguridad') {
+  throw new Error('La variante aplicacion-sin-google requiere su base exclusiva: DB_DATABASE=respaldoseguridad.');
+}
+
 function enteroPositivo(valor, nombre, valorPredeterminado) {
   const valorConvertido = Number(valor ?? valorPredeterminado);
 

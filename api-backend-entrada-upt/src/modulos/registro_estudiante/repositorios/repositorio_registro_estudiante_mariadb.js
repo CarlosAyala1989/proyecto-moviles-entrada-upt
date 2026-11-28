@@ -11,6 +11,47 @@ function errorConflicto() {
 }
 
 export class RepositorioRegistroEstudianteMariaDb {
+  async registrarIdentidadIntranet({ codigo, nombres, apellidos, nombreIntranet, escuelaProfesional }) {
+    const conexion = await grupoConexiones.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const [existente] = await conexion.query('SELECT * FROM usuarios WHERE codigo_institucional = ? FOR UPDATE', [codigo]);
+      let usuarioId = existente?.id;
+      if (existente) {
+        const roles = await conexion.query('SELECT r.nombre FROM usuarios_roles ur JOIN roles r ON r.id = ur.rol_id WHERE ur.usuario_id = ?', [usuarioId]);
+        if (roles.some(({ nombre }) => nombre !== 'ESTUDIANTE')) throw errorConflicto();
+        await conexion.query(
+          `UPDATE usuarios SET nombres = ?, apellidos = ?, nombre_institucional = ?, nombre_intranet = ?,
+           identidad_verificada = TRUE, identidad_verificada_en = CURRENT_TIMESTAMP(3),
+           estado = IF(estado = 'PENDIENTE', 'ACTIVO', estado),
+           estado_autorizacion = IF(estado_autorizacion = 'PENDIENTE', 'AUTORIZADO', estado_autorizacion)
+           WHERE id = ?`, [nombres, apellidos, `${nombres} ${apellidos}`, nombreIntranet, usuarioId],
+        );
+      } else {
+        await exigirRegistroSinRestriccion(conexion, codigo);
+        const insertado = await conexion.query(
+          `INSERT INTO usuarios (codigo_institucional, correo_institucional, nombres, apellidos, nombre_institucional,
+           nombre_intranet, estado, estado_autorizacion, identidad_verificada, identidad_verificada_en)
+           VALUES (?, NULL, ?, ?, ?, ?, 'ACTIVO', 'AUTORIZADO', TRUE, CURRENT_TIMESTAMP(3))`,
+          [codigo, nombres, apellidos, `${nombres} ${apellidos}`, nombreIntranet],
+        );
+        usuarioId = insertado.insertId;
+      }
+      if (escuelaProfesional) await conexion.query(
+        'INSERT INTO perfiles_academicos (usuario_id, escuela) VALUES (?, ?) ON DUPLICATE KEY UPDATE escuela = VALUES(escuela)', [usuarioId, escuelaProfesional],
+      );
+      await conexion.query("INSERT IGNORE INTO usuarios_roles (usuario_id, rol_id) SELECT ?, id FROM roles WHERE nombre = 'ESTUDIANTE' AND activo = TRUE", [usuarioId]);
+      await conexion.query("INSERT INTO registros_auditoria (usuario_actor_id, accion, entidad, entidad_id) VALUES (?, 'IDENTIDAD_INTRANET_VERIFICADA', 'USUARIO', ?)", [usuarioId, String(usuarioId)]);
+      const [usuario] = await conexion.query('SELECT id, codigo_institucional, correo_institucional, nombres, apellidos, estado, estado_autorizacion FROM usuarios WHERE id = ?', [usuarioId]);
+      await conexion.commit();
+      return usuario;
+    } catch (error) {
+      await conexion.rollback();
+      if (error?.errno === 1062) throw errorConflicto();
+      throw error;
+    } finally { conexion.release(); }
+  }
+
   async registrarIdentidadVerificada({
     codigo,
     correoInstitucional,

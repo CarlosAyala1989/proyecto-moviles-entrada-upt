@@ -45,7 +45,12 @@ export async function obtenerAsignacionSeguridad(usuarioId) {
   };
 }
 
-export async function comprobarUbicacionSeguridad(usuarioId, ubicacion, codigoPunto) {
+export async function comprobarUbicacionSeguridad(usuarioId, ubicacion, codigoPunto, { sinGeocerca = false } = {}) {
+  if (sinGeocerca) {
+    const punto = await obtenerAsignacionSeguridad(usuarioId);
+    if (codigoPunto && codigoPunto !== punto.codigo) throw fallo('SEGURIDAD_PUNTO_NO_ASIGNADO', 'Solo puedes operar en el punto asignado.');
+    return { punto_acceso: punto, distancia_metros: null, habilitado: true, verificacion_geografica: 'NO_APLICA' };
+  }
   const configuracion = await grupoConexiones.query('SELECT clave, valor FROM configuraciones_sistema');
   validarMomentoYPrecision(ubicacion, interpretarConfiguracionCodigosQr(Object.fromEntries(configuracion.map(({ clave, valor }) => [clave, valor]))));
   const punto = await obtenerAsignacionSeguridad(usuarioId);
@@ -150,11 +155,11 @@ export function crearEnrutadorGuardias() {
   return enrutador;
 }
 
-export function crearEnrutadorUbicacionSeguridad(requerirAutenticacion) {
+export function crearEnrutadorUbicacionSeguridad(requerirAutenticacion, { sinGeocerca = false } = {}) {
   const enrutador = Router();
   enrutador.use(requerirAutenticacion, requerirRoles('SEGURIDAD'));
-  enrutador.post('/comprobar-ubicacion', validarDatos({ cuerpo: esquemaUbicacionSeguridad }), async (solicitud, respuesta) => {
-    respuesta.json({ datos: await comprobarUbicacionSeguridad(solicitud.usuarioAutenticado.id, solicitud.datosValidados.cuerpo.ubicacion) });
+  enrutador.post('/comprobar-ubicacion', validarDatos({ cuerpo: sinGeocerca ? esquemaUbicacionSeguridad.partial() : esquemaUbicacionSeguridad }), async (solicitud, respuesta) => {
+    respuesta.json({ datos: await comprobarUbicacionSeguridad(solicitud.usuarioAutenticado.id, solicitud.datosValidados.cuerpo.ubicacion, undefined, { sinGeocerca }) });
   });
   return enrutador;
 }

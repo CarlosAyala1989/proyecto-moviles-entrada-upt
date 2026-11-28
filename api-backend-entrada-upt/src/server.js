@@ -4,11 +4,13 @@ import { entorno } from './config/env.js';
 import { ejecutarMigraciones } from './base_datos/migraciones.js';
 import { asegurarAdministradorInicial } from './base_datos/administrador_inicial.js';
 import { iniciarDepuracionPrivacidad } from './modulos/cuenta/retencion.js';
+import { asegurarAccesoGlobal } from './base_datos/variante_sin_google.js';
 
 let servidor;
 let detenerDepuracion;
 try {
   await ejecutarMigraciones({ grupoConexiones });
+  await asegurarAccesoGlobal(grupoConexiones);
   await asegurarAdministradorInicial(grupoConexiones);
   await verificarConexionBaseDatos();
   detenerDepuracion = iniciarDepuracionPrivacidad();

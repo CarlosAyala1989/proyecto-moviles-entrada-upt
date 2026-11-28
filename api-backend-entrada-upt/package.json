@@ -15,7 +15,8 @@
     "verificar:bd": "node scripts/verificar_conexion_bd.js",
     "sembrar:pruebas": "node scripts/cargar_datos_prueba.js",
     "crear:administrador-inicial": "node scripts/crear_administrador_inicial.js",
-    "crear:administrador-desarrollo": "node scripts/generar_administrador_desarrollo.js"
+    "crear:administrador-desarrollo": "node scripts/generar_administrador_desarrollo.js",
+    "preparar:sin-google": "node scripts/preparar_variante_sin_google.js"
   },
   "engines": {
     "node": ">=20"

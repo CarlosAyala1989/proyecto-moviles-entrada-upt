@@ -46,7 +46,7 @@ function entornoPrueba(cuenta, { repositorio = repo, transformar = (datos) => da
       },
   };
   const servicio = new ServicioEliminacionCuenta({ repositorio, configuracion: config, oauth });
-  return { servicio, oauth, app: crearAplicacion({ servicioEliminacion: servicio }), state: () => opciones.state, intercambios: () => intercambios };
+  return { servicio, oauth, app: crearAplicacion({ soloIntranet: false, servicioEliminacion: servicio }), state: () => opciones.state, intercambios: () => intercambios };
 }
 
 async function iniciar(prueba) {
@@ -231,7 +231,7 @@ describe('Eliminación real de cuenta de estudiante', () => {
   });
 
   it('sin configuración del portal falla solo el flujo nuevo y no cambia las rutas existentes', async () => {
-    const app = crearAplicacion({ configuracionEliminacion: {} });
+    const app = crearAplicacion({ soloIntranet: false, configuracionEliminacion: {} });
     await request(app).post('/api/cuenta/eliminacion/iniciar').send({ verificador: token() }).expect(503);
     await request(app).get('/api').expect(200);
     await request(app).get('/api/autenticacion/sesion').expect(401);

@@ -136,7 +136,7 @@ describe('Modelo de datos', () => {
            VALUES (?, ?, ?, ?, ?)`,
           ['PRUEBA-COORDENADA-INVALIDA', 'Punto inválido', 91, 0, 100],
         ),
-        (error) => error.errno === 4025,
+        (error) => [4025, 3819].includes(error.errno) && error.message.includes('chk_puntos_latitud'),
       );
     } finally {
       await conexion.rollback();

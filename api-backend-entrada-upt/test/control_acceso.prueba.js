@@ -10,7 +10,7 @@ import { coincideHorario } from '../src/modulos/control_acceso/politicas_acceso.
 import { calcularOtpOffline, firmarPasoOffline } from '../src/seguridad/codigos_qr_offline.js';
 import { manejarErrores } from '../src/middleware/manejo_errores.js';
 
-const app = crearAplicacion({ entornoEjecucion: 'test' });
+const app = crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test' });
 const sufijo = randomBytes(4).toString('hex').toUpperCase();
 const clave = 'Prueba-Operaciones-Seguridad!2026';
 const ids = {};
@@ -305,7 +305,7 @@ it('interpreta límites horarios y cruce de medianoche con días ISO de Lima', (
 });
 
 it('no registra SQL, parámetros ni query strings sensibles en los logs de errores o solicitudes', () => {
-  crearAplicacion({ entornoEjecucion: 'test', registrarSolicitudes: true });
+  crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test', registrarSolicitudes: true });
   assert.equal(morgan['ruta-segura']({ route: { path: '/usuarios/:id' }, originalUrl: '/usuarios/42?correo=privado@example.invalid' }), '/usuarios/:id');
   const original = console.error;
   let registrado;

@@ -5,16 +5,16 @@ import { comprobarUbicacionSeguridad } from '../seguridad_operativa/seguridad_op
 import * as esquemas from './control_acceso.esquemas.js';
 import * as repositorio from './control_acceso.repositorio.js';
 
-export function crearRutasOperacionSeguridad(requerirAutenticacion) {
+export function crearRutasOperacionSeguridad(requerirAutenticacion, { sinGeocerca = false } = {}) {
   const rutas = Router();
   rutas.use(requerirAutenticacion, requerirRoles('SEGURIDAD'));
-  rutas.post('/identidades/buscar', validarDatos({ cuerpo: esquemas.esquemaBusqueda }), async (solicitud, respuesta) => {
+  rutas.post('/identidades/buscar', validarDatos({ cuerpo: sinGeocerca ? esquemas.esquemaBusqueda.safeExtend({ ubicacion: esquemas.ubicacion.optional() }) : esquemas.esquemaBusqueda }), async (solicitud, respuesta) => {
     const datos = solicitud.datosValidados.cuerpo;
-    await comprobarUbicacionSeguridad(solicitud.usuarioAutenticado.id, datos.ubicacion);
+    await comprobarUbicacionSeguridad(solicitud.usuarioAutenticado.id, datos.ubicacion, undefined, { sinGeocerca });
     respuesta.json({ datos: await repositorio.buscarIdentidad(datos, solicitud.usuarioAutenticado.id) });
   });
-  rutas.post('/turnos', validarDatos({ cuerpo: esquemas.esquemaTurno }), async (solicitud, respuesta) => {
-    const asignacion = await comprobarUbicacionSeguridad(solicitud.usuarioAutenticado.id, solicitud.datosValidados.cuerpo.ubicacion);
+  rutas.post('/turnos', validarDatos({ cuerpo: sinGeocerca ? esquemas.esquemaTurno.partial() : esquemas.esquemaTurno }), async (solicitud, respuesta) => {
+    const asignacion = await comprobarUbicacionSeguridad(solicitud.usuarioAutenticado.id, solicitud.datosValidados.cuerpo.ubicacion, undefined, { sinGeocerca });
     respuesta.status(201).json({ datos: await repositorio.iniciarTurno(solicitud.usuarioAutenticado.id, asignacion.punto_acceso.id) });
   });
   rutas.get('/turnos', validarDatos({ consulta: esquemas.vacio }), async (solicitud, respuesta) => {

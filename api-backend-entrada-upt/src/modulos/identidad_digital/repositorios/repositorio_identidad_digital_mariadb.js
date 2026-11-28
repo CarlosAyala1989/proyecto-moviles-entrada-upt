@@ -49,7 +49,7 @@ export class RepositorioIdentidadDigitalMariaDb {
     return {
       id: fila.id,
       codigo_institucional: fila.codigo_institucional,
-      correo_institucional: fila.correo_institucional,
+      correo_institucional: fila.correo_institucional ?? '',
       nombres: fila.nombres,
       apellidos: fila.apellidos,
       nombre_completo: fila.nombre_completo,

@@ -1,3 +1,9 @@
+# Variante solo intranet
+
+Esta rama usa `api-sin-google.fottuto.men`, la base exclusiva `respaldoseguridad`
+y QR global sin GPS. Ver [despliegue y funcionamiento](docs/variante_sin_google.md).
+La documentación histórica siguiente describe también la versión dual de main.
+
 # API de Identidad Digital y Control de Acceso UPT
 
 Backend Node.js/Express para las aplicaciones móviles de estudiante y personal

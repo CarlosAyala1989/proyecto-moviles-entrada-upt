@@ -72,6 +72,7 @@ async function seleccionarPuntoAcceso(conexion, ubicacion) {
 }
 
 export class RepositorioCodigosQrMariaDb {
+  constructor({ sinGeocerca = false } = {}) { this.sinGeocerca = sinGeocerca; }
   async consultarConfiguracion() {
     const marcadores = clavesConfiguracion.map(() => '?').join(', ');
     const filas = await grupoConexiones.query(
@@ -144,7 +145,7 @@ export class RepositorioCodigosQrMariaDb {
         });
       }
 
-      const puntoAcceso = await seleccionarPuntoAcceso(conexion, ubicacion);
+      const puntoAcceso = this.sinGeocerca ? { id: null, codigo: 'GLOBAL', nombre: 'Acceso sin geocerca', distancia_metros: null } : await seleccionarPuntoAcceso(conexion, ubicacion);
 
       await conexion.query(
         `UPDATE credenciales_acceso
@@ -190,10 +191,10 @@ export class RepositorioCodigosQrMariaDb {
           otpHash,
           nonceHash,
           duracionSegundos,
-          ubicacion.latitud,
-          ubicacion.longitud,
-          ubicacion.precision_metros,
-          ubicacion.obtenida_en,
+          ubicacion?.latitud ?? null,
+          ubicacion?.longitud ?? null,
+          ubicacion?.precision_metros ?? null,
+          ubicacion?.obtenida_en ?? null,
           puntoAcceso.distancia_metros,
         ],
       );

@@ -12,10 +12,11 @@ import {
 
 export function crearEnrutadorIngresos({
   requerirAutenticacion,
-  repositorio = new RepositorioIngresosMariaDb(),
+  sinGeocerca = false,
+  repositorio = new RepositorioIngresosMariaDb({ sinGeocerca }),
 }) {
   const enrutador = Router();
-  const servicio = crearServicioIngresos(repositorio);
+  const servicio = crearServicioIngresos(repositorio, { sinGeocerca });
   const controlador = crearControladorIngresos(servicio);
 
   enrutador.use(requerirAutenticacion);
@@ -27,12 +28,12 @@ export function crearEnrutadorIngresos({
   enrutador.use(requerirRoles('SEGURIDAD'));
   enrutador.post(
     '/validar',
-    validarDatos({ cuerpo: esquemaValidarIngreso }),
+    validarDatos({ cuerpo: sinGeocerca ? esquemaValidarIngreso.extend({ ubicacion: esquemaValidarIngreso.shape.ubicacion.optional() }) : esquemaValidarIngreso }),
     controlador.validar,
   );
   enrutador.get(
     '/recientes',
-    validarDatos({ consulta: esquemaConsultarIngresosRecientes }),
+    validarDatos({ consulta: sinGeocerca ? esquemaConsultarIngresosRecientes.safeExtend({ latitud: esquemaConsultarIngresosRecientes.shape.latitud.optional(), longitud: esquemaConsultarIngresosRecientes.shape.longitud.optional(), precision_metros: esquemaConsultarIngresosRecientes.shape.precision_metros.optional(), obtenida_en: esquemaConsultarIngresosRecientes.shape.obtenida_en.optional() }) : esquemaConsultarIngresosRecientes }),
     controlador.consultarRecientes,
   );
 

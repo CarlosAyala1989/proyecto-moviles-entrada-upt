@@ -88,7 +88,12 @@ async function bloquearPersonalSeguridad(conexion, usuarioSeguridadId) {
   }
 }
 
-async function seleccionarPuntoAcceso(conexion, codigo, ubicacion) {
+async function seleccionarPuntoAcceso(conexion, codigo, ubicacion, sinGeocerca = false) {
+  if (sinGeocerca) {
+    const [punto] = await conexion.query('SELECT id, codigo, nombre, estado FROM puntos_acceso WHERE codigo = ? FOR UPDATE', [codigo]);
+    if (!punto) throw new ErrorHttp({ codigo: 'PUNTO_ACCESO_NO_ENCONTRADO', mensaje: 'El punto indicado no existe.', estadoHttp: 422 });
+    return { ...punto, radioPermitidoMetros: 0, distanciaMetros: 0, sinGeocerca: true };
+  }
   const [punto] = await conexion.query(
     `SELECT
       id,
@@ -165,16 +170,16 @@ async function registrarDecision(conexion, {
       resultado,
       motivo,
       JSON.stringify({
-        precision_reportada_metros: ubicacion.precision_metros,
-        distancia_calculada_metros: Number(puntoAcceso.distanciaMetros.toFixed(2)),
+        precision_reportada_metros: ubicacion.precision_metros ?? null,
+        distancia_calculada_metros: puntoAcceso.sinGeocerca ? null : Number(puntoAcceso.distanciaMetros.toFixed(2)),
         ...detalle,
       }),
       turno?.id ?? null,
-      ubicacion.latitud,
-      ubicacion.longitud,
-      ubicacion.precision_metros,
-      ubicacion.obtenida_en,
-      puntoAcceso.distanciaMetros,
+      ubicacion.latitud ?? null,
+      ubicacion.longitud ?? null,
+      ubicacion.precision_metros ?? null,
+      ubicacion.obtenida_en ?? null,
+      puntoAcceso.sinGeocerca ? null : puntoAcceso.distanciaMetros,
     ],
   );
   if (resultado === 'DENEGADO') {
@@ -228,6 +233,7 @@ function coincideIntegridad(credencial, codigo) {
 }
 
 export class RepositorioIngresosMariaDb {
+  constructor({ sinGeocerca = false } = {}) { this.sinGeocerca = sinGeocerca; }
   async consultarHistorialPersonal({ usuarioId, pagina, limite, resultado, desde, hasta }) {
     // La identidad proviene exclusivamente de la sesión autenticada.
     const condiciones = ['registros_acceso.usuario_id = ?'];
@@ -327,7 +333,7 @@ export class RepositorioIngresosMariaDb {
         `SELECT usuario_id, estado, secreto_qr_cifrado FROM dispositivos
          WHERE id = ? FOR UPDATE`, [codigo.dispositivoId],
       ) : [null];
-      const puntoAcceso = await seleccionarPuntoAcceso(conexion, puntoAccesoCodigo, ubicacion);
+      const puntoAcceso = await seleccionarPuntoAcceso(conexion, puntoAccesoCodigo, ubicacion, this.sinGeocerca);
       const datos = {
         conexion, usuarioId: usuario?.id, credencialId: null, puntoAcceso,
         usuarioSeguridadId, codigo, ubicacion,
@@ -339,7 +345,7 @@ export class RepositorioIngresosMariaDb {
         return decision;
       };
       if (puntoAcceso.estado !== 'ACTIVO') return await denegar('PUNTO_ACCESO_INACTIVO');
-      if (puntoAcceso.distanciaMetros > puntoAcceso.radioPermitidoMetros) {
+      if (!this.sinGeocerca && puntoAcceso.distanciaMetros > puntoAcceso.radioPermitidoMetros) {
         return await denegar('UBICACION_ESCANEO_FUERA_DE_ZONA');
       }
       if (!dispositivo || dispositivo.estado !== 'ACTIVO' || !dispositivo.secreto_qr_cifrado
@@ -448,6 +454,7 @@ export class RepositorioIngresosMariaDb {
         conexion,
         puntoAccesoCodigo,
         ubicacion,
+        this.sinGeocerca,
       );
       const datosDecision = {
         conexion,
@@ -467,7 +474,7 @@ export class RepositorioIngresosMariaDb {
         await conexion.commit();
         return resultado;
       }
-      if (puntoAcceso.distanciaMetros > puntoAcceso.radioPermitidoMetros) {
+      if (!this.sinGeocerca && puntoAcceso.distanciaMetros > puntoAcceso.radioPermitidoMetros) {
         const resultado = await decisionDenegada(
           datosDecision,
           'UBICACION_ESCANEO_FUERA_DE_ZONA',
@@ -542,7 +549,7 @@ export class RepositorioIngresosMariaDb {
         await conexion.commit();
         return resultado;
       }
-      if (credencial.punto_acceso_id !== puntoAcceso.id) {
+      if (!this.sinGeocerca && credencial.punto_acceso_id !== puntoAcceso.id) {
         const resultado = await decisionDenegada(
           datosDecision,
           'PUNTO_ACCESO_NO_COINCIDE',

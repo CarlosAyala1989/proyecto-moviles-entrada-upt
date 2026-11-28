@@ -36,7 +36,7 @@ const usuariosPrueba = [
     apellidos: 'Sin Rol',
   },
 ];
-const aplicacion = crearAplicacion({ entornoEjecucion: 'test' });
+const aplicacion = crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test' });
 const idsUsuarios = new Map();
 
 function ubicacionValida(longitud = 10) {

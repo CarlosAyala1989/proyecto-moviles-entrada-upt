@@ -15,7 +15,7 @@ const usuariosPrueba = [
   ['PRUEBA-OPERATIVA-SEG-B', 'SEGURIDAD'],
   ['PRUEBA-OPERATIVA-PORTADOR', 'ESTUDIANTE'],
 ];
-const aplicacion = crearAplicacion({ entornoEjecucion: 'test' });
+const aplicacion = crearAplicacion({ sinGeocerca: false, entornoEjecucion: 'test' });
 const idsUsuarios = new Map();
 const idsPuntos = new Map();
 const idsRegistros = [];

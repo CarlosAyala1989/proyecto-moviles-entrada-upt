@@ -13,7 +13,7 @@ function paginaRetornoGoogle(exitosa) {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${titulo}</title></head><body><main><h1>${titulo}</h1><p>${mensaje}</p></main></body></html>`;
 }
 
-export function crearControladorRegistroEstudiante(servicioIntranet, servicioGoogle) {
+export function crearControladorRegistroEstudiante(servicioIntranet, servicioGoogle, servicioAccesoIntranet) {
   return {
     obtenerCaptchaIntranet: async (_solicitud, respuesta) => {
       respuesta.json({ datos: await servicioIntranet.obtenerCaptcha() });
@@ -27,7 +27,9 @@ export function crearControladorRegistroEstudiante(servicioIntranet, servicioGoo
         captcha: cuerpo.captcha,
         ...(cuerpo.incluir_datos_estudiante ? { incluirDatosEstudiante: true } : {}),
       });
-      respuesta.json({ datos: perfil });
+      const sesion = servicioAccesoIntranet
+        ? await servicioAccesoIntranet.iniciar(perfil, obtenerMetadatos(solicitud)) : undefined;
+      respuesta.json({ datos: { ...perfil, ...(sesion ? { sesion } : {}) } });
     },
     iniciarGoogle: async (solicitud, respuesta) => {
       const datos = await servicioGoogle.iniciar({

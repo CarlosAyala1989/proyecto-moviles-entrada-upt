@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { validarDatos } from '../../middleware/validar_datos.js';
 import { ErrorHttp } from '../../middleware/manejo_errores.js';
+import { esquemaVerificarIntranet } from '../registro_estudiante/validacion/registro_estudiante.esquemas.js';
 
 const verificador = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 const credencial = z.object({ id: z.uuid(), verificador }).strict();
@@ -22,14 +23,22 @@ function limitarSolicitudes() {
   };
 }
 
-export function crearRutasCuenta(servicio) {
+export function crearRutasCuenta(servicio, { soloIntranet = true } = {}) {
   const rutas = Router();
   rutas.use(limitarSolicitudes());
   rutas.use((_req, res, next) => { res.set('Referrer-Policy', 'no-referrer'); next(); });
-  rutas.post('/eliminacion/iniciar', validarDatos({ cuerpo: z.object({ verificador }).strict() }), async (req, res) => {
+  if (soloIntranet) {
+    rutas.post('/eliminacion/intranet/captcha', validarDatos({ cuerpo: z.object({}).strict() }), async (_req, res) => {
+      res.json({ datos: await servicio.obtenerCaptcha() });
+    });
+    rutas.post('/eliminacion/intranet/verificar', validarDatos({ cuerpo: esquemaVerificarIntranet.omit({ incluir_datos_estudiante: true }).extend({ verificador }) }), async (req, res) => {
+      res.status(201).json({ datos: await servicio.verificar(req.datosValidados.cuerpo) });
+    });
+  }
+  if (!soloIntranet) rutas.post('/eliminacion/iniciar', validarDatos({ cuerpo: z.object({ verificador }).strict() }), async (req, res) => {
     res.status(201).json({ datos: await servicio.iniciar(req.datosValidados.cuerpo.verificador) });
   });
-  rutas.get('/eliminacion/google/callback', async (req, res) => {
+  if (!soloIntranet) rutas.get('/eliminacion/google/callback', async (req, res) => {
     const destino = servicio.paginaRetorno();
     await servicio.procesarRetorno(req.query);
     res.redirect(303, destino);

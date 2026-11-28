@@ -12,17 +12,18 @@ import {
 
 export function crearEnrutadorCodigosQr({
   requerirAutenticacion,
-  repositorio = new RepositorioCodigosQrMariaDb(),
+  sinGeocerca = false,
+  repositorio = new RepositorioCodigosQrMariaDb({ sinGeocerca }),
   repositorioOffline = new RepositorioCodigosQrOfflineMariaDb(),
 }) {
   const enrutador = Router();
-  const servicio = crearServicioCodigosQr(repositorio, repositorioOffline);
+  const servicio = crearServicioCodigosQr(repositorio, repositorioOffline, { sinGeocerca });
   const controlador = crearControladorCodigosQr(servicio);
 
   enrutador.use(requerirAutenticacion);
   enrutador.post(
     '/',
-    validarDatos({ cuerpo: esquemaGenerarCodigoQr }),
+    validarDatos({ cuerpo: sinGeocerca ? esquemaGenerarCodigoQr.partial() : esquemaGenerarCodigoQr }),
     controlador.generar,
   );
   enrutador.post(

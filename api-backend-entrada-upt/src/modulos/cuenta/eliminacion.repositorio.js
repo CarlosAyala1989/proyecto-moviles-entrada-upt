@@ -8,6 +8,25 @@ const error = (codigo, mensaje, estadoHttp = 409) => new ErrorHttp({ codigo, men
 export class RepositorioEliminacionCuenta {
   constructor(pool = grupoConexiones) { this.pool = pool; }
 
+  async crearVerificadaIntranet({ id, codigo, navegadorHash, expiraEn }) {
+    await this.limpiarExpiradas();
+    const [cantidad] = await this.pool.query('SELECT COUNT(*) AS total FROM solicitudes_eliminacion_cuenta');
+    if (cantidad.total >= 500) throw error('ELIMINACION_SATURADA', 'Hay demasiadas verificaciones. Inténtalo más tarde.', 429);
+    const conexion = await this.pool.getConnection();
+    try {
+      await conexion.beginTransaction();
+      const [usuario] = await conexion.query('SELECT id FROM usuarios WHERE codigo_institucional = ? FOR UPDATE', [codigo]);
+      if (!usuario) throw error('CUENTA_NO_ENCONTRADA', 'No hay una cuenta de estudiante vinculada a esta identidad de intranet.', 404);
+      await this.exigirCuentaEstudiante(conexion, usuario.id);
+      await conexion.query(
+        `INSERT INTO solicitudes_eliminacion_cuenta (id, estado, navegador_hash, usuario_id, expira_en)
+         VALUES (?, 'LISTA', ?, ?, ?)`, [id, navegadorHash, usuario.id, expiraEn],
+      );
+      await conexion.commit();
+    } catch (fallo) { await conexion.rollback(); throw fallo; }
+    finally { conexion.release(); }
+  }
+
   async crear(datos) {
     await this.limpiarExpiradas();
     const [cantidad] = await this.pool.query('SELECT COUNT(*) AS total FROM solicitudes_eliminacion_cuenta');
@@ -73,14 +92,14 @@ export class RepositorioEliminacionCuenta {
 
   async consultar(id, navegadorHash) {
     const [fila] = await this.pool.query(
-      `SELECT s.estado, s.error_codigo, s.completada_en, u.nombres, u.apellidos, u.correo_institucional
+      `SELECT s.estado, s.error_codigo, s.completada_en, u.nombres, u.apellidos, u.correo_institucional, u.codigo_institucional
        FROM solicitudes_eliminacion_cuenta s LEFT JOIN usuarios u ON u.id = s.usuario_id
        WHERE s.id = ? AND s.navegador_hash = ? AND s.expira_en > CURRENT_TIMESTAMP(3)`, [id, navegadorHash],
     );
     if (!fila) throw error('SOLICITUD_EXPIRADA', 'La verificación no es válida o venció. Inicia otra vez.', 410);
     return {
       estado: fila.estado,
-      ...(fila.estado === 'LISTA' ? { cuenta: { nombre: [fila.nombres, fila.apellidos].filter(Boolean).join(' '), correo: fila.correo_institucional } } : {}),
+      ...(fila.estado === 'LISTA' ? { cuenta: { nombre: [fila.nombres, fila.apellidos].filter(Boolean).join(' '), correo: fila.correo_institucional, codigo: fila.codigo_institucional } } : {}),
       ...(fila.estado === 'ERROR' ? { codigo: fila.error_codigo } : {}),
       ...(fila.estado === 'COMPLETADA' ? { completada_en: fila.completada_en } : {}),
     };
@@ -150,8 +169,8 @@ export class RepositorioEliminacionCuenta {
     await conexion.query('DELETE FROM sesiones WHERE usuario_id = ?', [id]);
     await conexion.query('DELETE u FROM usos_codigos_offline u JOIN dispositivos d ON d.id = u.dispositivo_id WHERE d.usuario_id = ?', [id]);
     await conexion.query('DELETE FROM dispositivos WHERE usuario_id = ?', [id]);
-    const hashes = [usuario.codigo_institucional, usuario.correo_institucional, `google:${id}`].map(calcularHashIdentificador);
-    await conexion.query('DELETE FROM intentos_inicio_sesion WHERE usuario_id = ? OR identificador_hash IN (?, ?, ?)', [id, ...hashes]);
+    const hashes = [usuario.codigo_institucional, usuario.correo_institucional, `google:${id}`, `intranet:${id}`].filter(Boolean).map(calcularHashIdentificador);
+    await conexion.query(`DELETE FROM intentos_inicio_sesion WHERE usuario_id = ? OR identificador_hash IN (${hashes.map(() => '?').join(', ')})`, [id, ...hashes]);
     await conexion.query('DELETE FROM perfiles_academicos WHERE usuario_id = ?', [id]);
     await conexion.query('UPDATE usuarios_roles SET asignado_por = NULL WHERE asignado_por = ?', [id]);
     await conexion.query('UPDATE configuraciones_sistema SET actualizado_por = NULL WHERE actualizado_por = ?', [id]);

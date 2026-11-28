@@ -127,7 +127,7 @@ it('consulta datos académicos y de pagos con el mismo acceso de intranet', asyn
     urlLogin: `http://127.0.0.1:${intranet.address().port}/index2.php`,
   });
   try {
-    const api = request(crearAplicacion({ entornoEjecucion: 'test', servicioIntranet }));
+    const api = request(crearAplicacion({ soloIntranet: false, entornoEjecucion: 'test', servicioIntranet }));
     const captcha = await api.get(`${rutaApi}/captcha`).expect(200);
     const credenciales = {
       transaccion_id: captcha.body.datos.transaccion_id,

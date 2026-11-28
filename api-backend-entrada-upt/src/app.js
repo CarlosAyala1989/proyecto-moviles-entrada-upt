@@ -21,6 +21,8 @@ import { enrutadorSalud } from './routes/salud.rutas.js';
 import { crearRutasCuenta } from './modulos/cuenta/cuenta.rutas.js';
 import { RepositorioEliminacionCuenta } from './modulos/cuenta/eliminacion.repositorio.js';
 import { ServicioEliminacionCuenta } from './modulos/cuenta/eliminacion.servicio.js';
+import { ServicioEliminacionIntranet } from './modulos/cuenta/eliminacion_intranet.servicio.js';
+import { ServicioIntranetUpt } from './modulos/registro_estudiante/servicios/intranet_upt.servicio.js';
 
 export function crearAplicacion({
   configuracionAutenticacion = entorno.autenticacion,
@@ -36,11 +38,14 @@ export function crearAplicacion({
   servicioGoogle,
   servicioIntranet,
   servicioEliminacion,
+  soloIntranet = true,
+  sinGeocerca = true,
   configuracionEliminacion = entorno.eliminacionCuenta,
   configuracionGoogle = entorno.google,
   registrarSolicitudes = entornoEjecucion !== 'test',
 } = {}) {
   const aplicacion = express();
+  const proveedorIntranet = servicioIntranet ?? new ServicioIntranetUpt();
   const repositorioSesiones = repositorioAutenticacion
     ?? new RepositorioAutenticacionMariaDb();
   const servicioAutenticacion = crearServicioAutenticacion(
@@ -72,17 +77,22 @@ export function crearAplicacion({
     respuesta.json({
       nombre: 'API Entrada UPT',
       version: '1.0.0',
+      autenticacion_estudiante: soloIntranet ? 'INTRANET' : 'INTRANET_GOOGLE',
+      geocerca: !sinGeocerca,
     });
   });
 
   aplicacion.use('/api/salud', enrutadorSalud);
-  aplicacion.use('/api/cuenta', crearRutasCuenta(servicioEliminacion ?? new ServicioEliminacionCuenta({
+  const proveedorEliminacion = servicioEliminacion ?? (soloIntranet
+    ? new ServicioEliminacionIntranet({ repositorio: new RepositorioEliminacionCuenta(), servicioIntranet: proveedorIntranet })
+    : new ServicioEliminacionCuenta({
     repositorio: new RepositorioEliminacionCuenta(), configuracion: configuracionEliminacion,
-  })));
+  }));
+  aplicacion.use('/api/cuenta', crearRutasCuenta(proveedorEliminacion, { soloIntranet }));
   // Se conserva temporalmente mientras los clientes migran a la ruta en español.
   aplicacion.use('/api/health', enrutadorSalud);
-  aplicacion.use('/api/seguridad', crearEnrutadorUbicacionSeguridad(requerirAutenticacion));
-  aplicacion.use('/api/seguridad', crearRutasOperacionSeguridad(requerirAutenticacion));
+  aplicacion.use('/api/seguridad', crearEnrutadorUbicacionSeguridad(requerirAutenticacion, { sinGeocerca }));
+  aplicacion.use('/api/seguridad', crearRutasOperacionSeguridad(requerirAutenticacion, { sinGeocerca }));
   aplicacion.use('/api/ingresos', crearRutasIncidencias(requerirAutenticacion));
   aplicacion.use(
     '/api/autenticacion',
@@ -101,6 +111,7 @@ export function crearAplicacion({
   aplicacion.use(
     '/api/codigos-qr',
     crearEnrutadorCodigosQr({
+      sinGeocerca,
       requerirAutenticacion,
       repositorio: repositorioCodigosQr,
     }),
@@ -108,6 +119,7 @@ export function crearAplicacion({
   aplicacion.use(
     '/api/ingresos',
     crearEnrutadorIngresos({
+      sinGeocerca,
       requerirAutenticacion,
       repositorio: repositorioIngresos,
     }),
@@ -130,7 +142,8 @@ export function crearAplicacion({
   aplicacion.use(
     '/api/registro-estudiante',
     crearEnrutadorRegistroEstudiante({
-      servicioIntranet,
+      servicioIntranet: proveedorIntranet,
+      soloIntranet,
       servicioGoogle,
       configuracionGoogle,
       repositorio: repositorioRegistroEstudiante,

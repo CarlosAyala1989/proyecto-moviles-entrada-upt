@@ -8,7 +8,7 @@ describe('Registro de estudiante: intranet', () => {
   it('entrega un CAPTCHA y verifica solamente datos con el contrato esperado', async () => {
     const verificaciones = [];
     const iniciosGoogle = [];
-    const aplicacion = crearAplicacion({
+    const aplicacion = crearAplicacion({ soloIntranet: false,
       entornoEjecucion: 'test',
       servicioIntranet: {
         obtenerCaptcha: async () => ({

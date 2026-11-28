@@ -82,19 +82,19 @@ function normalizarEstadoActual(credencial) {
   };
 }
 
-export function crearServicioCodigosQr(repositorio, repositorioOffline) {
+export function crearServicioCodigosQr(repositorio, repositorioOffline, { sinGeocerca = false } = {}) {
   return {
     generar: async ({ usuarioId, sesionId, ubicacion }) => {
       const configuracion = interpretarConfiguracionCodigosQr(
         await repositorio.consultarConfiguracion(),
       );
-      validarMomentoYPrecision(ubicacion, configuracion);
+      if (!sinGeocerca) validarMomentoYPrecision(ubicacion, configuracion);
 
       const codigo = generarCodigoQrOpaco();
       const credencial = await repositorio.generar({
         usuarioId,
         sesionId,
-        ubicacion: {
+        ubicacion: sinGeocerca ? null : {
           ...ubicacion,
           obtenida_en: new Date(ubicacion.obtenida_en),
         },
@@ -113,9 +113,9 @@ export function crearServicioCodigosQr(repositorio, repositorioOffline) {
         duracion_segundos: configuracion.duracionSegundos,
         un_solo_uso: configuracion.unSoloUso,
         ubicacion: {
-          resultado: 'DENTRO_DE_ZONA_CONFIGURADA',
-          precision_reportada_metros: ubicacion.precision_metros,
-          distancia_calculada_metros: Number(
+          resultado: sinGeocerca ? 'NO_REQUERIDA' : 'DENTRO_DE_ZONA_CONFIGURADA',
+          precision_reportada_metros: sinGeocerca ? null : ubicacion.precision_metros,
+          distancia_calculada_metros: sinGeocerca ? null : Number(
             credencial.punto_acceso.distancia_metros.toFixed(2),
           ),
           punto_acceso: {

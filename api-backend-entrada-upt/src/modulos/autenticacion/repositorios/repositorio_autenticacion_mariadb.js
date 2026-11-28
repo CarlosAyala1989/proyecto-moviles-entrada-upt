@@ -18,7 +18,7 @@ function usuarioPublico(usuario, roles) {
   return {
     id: usuario.usuario_id ?? usuario.id,
     codigo_institucional: usuario.codigo_institucional,
-    correo_institucional: usuario.correo_institucional,
+    correo_institucional: usuario.correo_institucional ?? '',
     nombres: usuario.nombres,
     apellidos: usuario.apellidos,
     roles,
